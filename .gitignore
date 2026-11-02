@@ -1,0 +1,28 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+coverage/
+
+# Secrets and local configuration (only .env.example is versioned)
+.env
+.env.*
+!.env.example
+
+# Local databases, including SQLite WAL side files
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite3
+
+# Frontend
+node_modules/
+ui/dist/
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/launch.json
