@@ -1,0 +1,141 @@
+{
+  "proposal_id": "prop_7f3a9c",
+  "status": "EXECUTED",
+  "paypal": {
+    "new_invoice_id": "INV2-K4M9-2P7X-8Q3N-V5RD",
+    "original_invoice_id": "INV2-6W2K-7D9Q-4M3P-R8TX",
+    "steps": [
+      "create_draft",
+      "cancel_invoice",
+      "send_invoice"
+    ]
+  },
+  "audit_events": [
+    {
+      "event_id": "aud_000011",
+      "seq": 11,
+      "ts": "2026-11-02T15:12:20Z",
+      "actor": {
+        "type": "CUSTOMER",
+        "id": "customer_demo"
+      },
+      "action": "CUSTOMER_ACCEPTED",
+      "invoice_id": "INV-001",
+      "proposal_id": "prop_7f3a9c",
+      "state_from": "PENDING_CUSTOMER",
+      "state_to": "ACCEPTED",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "Customer accepted the pre-approved option",
+      "proposed_by": null,
+      "paypal_called": false,
+      "source": null,
+      "paypal_ref": null
+    },
+    {
+      "event_id": "aud_000012",
+      "seq": 12,
+      "ts": "2026-11-02T15:12:20Z",
+      "actor": {
+        "type": "SYSTEM",
+        "id": "execution_service"
+      },
+      "action": "EXECUTION_STARTED",
+      "invoice_id": "INV-001",
+      "proposal_id": "prop_7f3a9c",
+      "state_from": "ACCEPTED",
+      "state_to": "EXECUTING",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "PayPal replacement sequence started",
+      "proposed_by": null,
+      "paypal_called": false,
+      "source": null,
+      "paypal_ref": null
+    },
+    {
+      "event_id": "aud_000013",
+      "seq": 13,
+      "ts": "2026-11-02T15:12:22Z",
+      "actor": {
+        "type": "SYSTEM",
+        "id": "execution_service"
+      },
+      "action": "PAYPAL_DRAFT_CREATED",
+      "invoice_id": "INV-001",
+      "proposal_id": "prop_7f3a9c",
+      "state_from": "EXECUTING",
+      "state_to": "EXECUTING",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "Replacement invoice created as DRAFT (not payable)",
+      "proposed_by": null,
+      "paypal_called": true,
+      "source": null,
+      "paypal_ref": "INV2-K4M9-2P7X-8Q3N-V5RD"
+    },
+    {
+      "event_id": "aud_000014",
+      "seq": 14,
+      "ts": "2026-11-02T15:12:24Z",
+      "actor": {
+        "type": "SYSTEM",
+        "id": "execution_service"
+      },
+      "action": "PAYPAL_ORIGINAL_CANCELLED",
+      "invoice_id": "INV-001",
+      "proposal_id": "prop_7f3a9c",
+      "state_from": "EXECUTING",
+      "state_to": "EXECUTING",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "Original invoice cancelled",
+      "proposed_by": null,
+      "paypal_called": true,
+      "source": null,
+      "paypal_ref": "INV2-6W2K-7D9Q-4M3P-R8TX"
+    },
+    {
+      "event_id": "aud_000015",
+      "seq": 15,
+      "ts": "2026-11-02T15:12:26Z",
+      "actor": {
+        "type": "SYSTEM",
+        "id": "execution_service"
+      },
+      "action": "PAYPAL_INVOICE_SENT",
+      "invoice_id": "INV-001",
+      "proposal_id": "prop_7f3a9c",
+      "state_from": "EXECUTING",
+      "state_to": "EXECUTING",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "Replacement invoice sent to the customer",
+      "proposed_by": null,
+      "paypal_called": true,
+      "source": null,
+      "paypal_ref": "INV2-K4M9-2P7X-8Q3N-V5RD"
+    },
+    {
+      "event_id": "aud_000016",
+      "seq": 16,
+      "ts": "2026-11-02T15:12:26Z",
+      "actor": {
+        "type": "SYSTEM",
+        "id": "execution_service"
+      },
+      "action": "EXECUTION_COMPLETED",
+      "invoice_id": "INV-001",
+      "proposal_id": "prop_7f3a9c",
+      "state_from": "EXECUTING",
+      "state_to": "EXECUTED",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "Replacement completed; exactly one open invoice",
+      "proposed_by": null,
+      "paypal_called": true,
+      "source": null,
+      "paypal_ref": "INV2-K4M9-2P7X-8Q3N-V5RD"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "proposal_id": "prop_d05c81",
+  "status": "EXECUTED",
+  "audit_events": [
+    {
+      "event_id": "aud_000019",
+      "seq": 19,
+      "ts": "2026-11-02T15:18:12Z",
+      "actor": {
+        "type": "SYSTEM",
+        "id": "reconciler"
+      },
+      "action": "RECONCILED",
+      "invoice_id": "INV-001",
+      "proposal_id": "prop_d05c81",
+      "state_from": "NEEDS_RECONCILIATION",
+      "state_to": "EXECUTED",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "Pending send retried; draft invoice sent after the original was cancelled",
+      "proposed_by": null,
+      "paypal_called": true,
+      "source": "RECONCILIATION",
+      "paypal_ref": "INV2-K4M9-2P7X-8Q3N-V5RD"
+    }
+  ]
+}

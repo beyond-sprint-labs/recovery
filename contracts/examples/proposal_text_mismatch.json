@@ -1,0 +1,82 @@
+{
+  "proposal_id": "prop_e19b44",
+  "invoice_id": "INV-001",
+  "status": "BLOCKED",
+  "engine_version": "1.0.0",
+  "currency": "USD",
+  "customer_intent": {
+    "available_now": null,
+    "preferred_installments": null,
+    "requested_discount_pct": "10",
+    "desired_date": null
+  },
+  "alternatives": [],
+  "attempted": [
+    {
+      "type": "settlement_discount",
+      "terms": {
+        "discount_pct": "10"
+      },
+      "computed": {
+        "amount_due_now": "900.00",
+        "merchant_difference_vs_balance": "-100.00"
+      }
+    }
+  ],
+  "blocked_reasons": [
+    {
+      "code": "TEXT_NUMBER_MISMATCH",
+      "message": "AI text contains figure 850.00 that the finance engine did not produce",
+      "limit": null,
+      "attempted": "850.00",
+      "unit": "amount"
+    }
+  ],
+  "explanation": null,
+  "customer_message_draft": null,
+  "policy_check": {
+    "status": "PASSED",
+    "violations": []
+  },
+  "text_number_check": {
+    "status": "FAILED",
+    "numbers_in_text": [
+      "10",
+      "850.00"
+    ],
+    "unmatched": [
+      "850.00"
+    ]
+  },
+  "paypal_called": false,
+  "audit_event": {
+    "event_id": "aud_000008",
+    "seq": 8,
+    "ts": "2026-11-02T15:06:02Z",
+    "actor": {
+      "type": "SYSTEM",
+      "id": "text_guard"
+    },
+    "action": "PROPOSAL_BLOCKED",
+    "invoice_id": "INV-001",
+    "proposal_id": "prop_e19b44",
+    "state_from": "DRAFTED",
+    "state_to": "BLOCKED",
+    "severity": "CRITICAL",
+    "rule": {
+      "code": "TEXT_NUMBER_MISMATCH",
+      "limit": null,
+      "attempted": "850.00",
+      "unit": "amount"
+    },
+    "summary": "AI-written text contains figure 850.00 not produced by the finance engine; PayPal not called",
+    "proposed_by": {
+      "type": "AGENT",
+      "id": "agent_v1",
+      "mode": "DEMO"
+    },
+    "paypal_called": false,
+    "source": null,
+    "paypal_ref": null
+  }
+}

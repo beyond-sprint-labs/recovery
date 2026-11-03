@@ -1,0 +1,51 @@
+{
+  "proposal_id": "prop_7f3a9c",
+  "status": "PENDING_CUSTOMER",
+  "approved_alternative": "down_payment_installments",
+  "customer_link": "http://localhost:5173/customer/demo-token-A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6",
+  "customer_token_expires_at": "2026-11-03T15:10:00Z",
+  "audit_events": [
+    {
+      "event_id": "aud_000009",
+      "seq": 9,
+      "ts": "2026-11-02T15:10:00Z",
+      "actor": {
+        "type": "MERCHANT",
+        "id": "merchant_demo"
+      },
+      "action": "PROPOSAL_APPROVED",
+      "invoice_id": "INV-001",
+      "proposal_id": "prop_7f3a9c",
+      "state_from": "PENDING_MERCHANT",
+      "state_to": "APPROVED",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "Merchant approved the down payment + installments option",
+      "proposed_by": null,
+      "paypal_called": false,
+      "source": null,
+      "paypal_ref": null
+    },
+    {
+      "event_id": "aud_000010",
+      "seq": 10,
+      "ts": "2026-11-02T15:10:00Z",
+      "actor": {
+        "type": "SYSTEM",
+        "id": "recovery_service"
+      },
+      "action": "CUSTOMER_LINK_ISSUED",
+      "invoice_id": "INV-001",
+      "proposal_id": "prop_7f3a9c",
+      "state_from": "APPROVED",
+      "state_to": "PENDING_CUSTOMER",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "Single-use customer link issued; expires in 24 hours",
+      "proposed_by": null,
+      "paypal_called": false,
+      "source": null,
+      "paypal_ref": null
+    }
+  ]
+}
