@@ -1,5 +1,6 @@
 import uuid
 from typing import Any, Literal
+
 from .gateway import PayPalGateway, PayPalInvoiceRef, PayPalInvoiceState
 
 
@@ -52,9 +53,7 @@ class MockPayPalGateway(PayPalGateway):
 
         invoice = self.invoices_db[paypal_invoice_id]
         if invoice["status"] != "DRAFT":
-            raise ValueError(
-                f"Can only send DRAFT invoices. Current status: {invoice['status']}"
-            )
+            raise ValueError(f"Can only send DRAFT invoices. Current status: {invoice['status']}")
 
         invoice["status"] = "UNPAID"
         return PayPalInvoiceRef(id=paypal_invoice_id, status="UNPAID")

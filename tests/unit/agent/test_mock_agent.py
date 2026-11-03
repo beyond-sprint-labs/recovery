@@ -1,4 +1,3 @@
-import pytest
 from app.agent.mock_agent import mock_agent_run
 
 

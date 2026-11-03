@@ -1,11 +1,11 @@
-from typing import Protocol, Type
+from typing import Protocol
+
 from pydantic import BaseModel
 
 
 class LLMClient(Protocol):
-
     # Interface to interact with the LLM provider (OpenAI, Anthropic, etc.).
 
-    def complete(self, system: str, user: str, schema: Type[BaseModel]) -> BaseModel:
+    def complete(self, system: str, user: str, schema: type[BaseModel]) -> BaseModel:
         # Sends a prompt and expects a JSON validated by the Pydantic schema.
         ...
