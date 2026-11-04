@@ -6,12 +6,21 @@ would accept full-width or Arabic-Indic digits, which ``Decimal`` parses.
 """
 
 import re
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import Annotated, Final, Literal
+from typing import Annotated, Final, Literal, Self
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    model_validator,
+)
+
+from app.core.states import ProposalStatus
 
 # --- monetary and numeric primitives --------------------------------------------------
 
@@ -75,8 +84,8 @@ class AuditEvent(BaseModel):
     action: str
     invoice_id: str | None
     proposal_id: str | None
-    state_from: str | None
-    state_to: str | None
+    state_from: ProposalStatus | None
+    state_to: ProposalStatus | None
     severity: Severity
     rule: RuleHit | None = None
     summary: str
@@ -103,6 +112,246 @@ class CreateProposalIn(BaseModel):
     scenario_id: (
         Annotated[str, StringConstraints(max_length=64, pattern=r"^[A-Za-z0-9_-]+$")] | None
     ) = None
+
+
+# --- domain models ------------------------------------------------------------------------
+
+Currency = Literal["USD"]
+
+
+class AlternativeType(StrEnum):
+    SETTLEMENT_DISCOUNT = "settlement_discount"
+    DOWN_PAYMENT_INSTALLMENTS = "down_payment_installments"
+
+
+class InvoiceStatus(StrEnum):
+    OVERDUE = "OVERDUE"
+    PAID = "PAID"
+    CANCELLED = "CANCELLED"
+
+
+class Invoice(BaseModel):
+    id: str
+    customer_name: str
+    currency: Currency
+    balance: Money
+    due_date: date
+    status: InvoiceStatus
+    paypal_invoice_id: str | None = None
+
+
+class Policy(BaseModel):
+    """Merchant limits. Read-only for clients: they live on the server (DEC-17)."""
+
+    currency: Currency
+    max_discount_pct: Pct
+    min_down_payment_pct: Pct
+    max_installments: Installments
+    max_financing_rate_pct: Pct
+    merchant_discount_rate_pct: Pct
+
+
+class CustomerIntent(BaseModel):
+    """What the agent extracts from the customer message. Strict: unknown keys are invalid."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    available_now: Money | None = None
+    preferred_installments: Installments | None = None
+    requested_discount_pct: Pct | None = None
+    desired_date: date | None = None
+
+
+class SettlementTerms(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    discount_pct: Pct
+
+
+class InstallmentTerms(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    down_payment_pct: Pct
+    installments: Installments
+    periodic_rate_pct: Pct
+
+
+Terms = SettlementTerms | InstallmentTerms
+
+_TERMS_BY_TYPE: Final = {
+    AlternativeType.SETTLEMENT_DISCOUNT: SettlementTerms,
+    AlternativeType.DOWN_PAYMENT_INSTALLMENTS: InstallmentTerms,
+}
+
+
+class _TypedTerms(BaseModel):
+    """Shared base: ``terms`` must be the shape that ``type`` announces."""
+
+    type: AlternativeType
+    terms: Terms
+
+    @model_validator(mode="after")
+    def _terms_match_type(self) -> Self:
+        if not isinstance(self.terms, _TERMS_BY_TYPE[self.type]):
+            raise ValueError(f"terms do not match alternative type {self.type.value}")
+        return self
+
+
+class ScheduleItem(BaseModel):
+    n: Annotated[int, Field(ge=0)]
+    due_date: date
+    amount: Money
+    principal: Money
+    interest: Money
+
+
+class Alternative(_TypedTerms):
+    amount_due_now: Money
+    installment_amount: Money | None = None
+    total_paid: Money
+    present_value: Money
+    financing_cost: Money
+    merchant_difference_vs_balance: SignedMoney
+    policy_ok: bool
+    violations: list[RuleHit] = Field(default_factory=list)
+    schedule: list[ScheduleItem]
+
+
+class AttemptedComputed(BaseModel):
+    amount_due_now: Money
+    merchant_difference_vs_balance: SignedMoney
+
+
+class AttemptedAlternative(_TypedTerms):
+    """Terms the AI tried that violated policy, kept only as audit evidence."""
+
+    computed: AttemptedComputed
+
+
+class PolicyCheck(BaseModel):
+    status: Literal["PASSED", "BLOCKED"]
+    violations: list[RuleHit] = Field(default_factory=list)
+
+
+class TextNumberCheck(BaseModel):
+    status: Literal["PASSED", "FAILED", "SKIPPED"]
+    numbers_in_text: list[str] = Field(default_factory=list)
+    unmatched: list[str] = Field(default_factory=list)
+
+
+class PayPalExecution(BaseModel):
+    new_invoice_id: str | None = None
+    original_invoice_id: str | None = None
+    steps: list[str] = Field(default_factory=list)
+
+
+class ProposalOut(BaseModel):
+    """Merchant-side view of a proposal. BLOCKED is a business result: HTTP 200."""
+
+    proposal_id: str
+    invoice_id: str
+    status: ProposalStatus
+    engine_version: str
+    currency: Currency
+    customer_intent: CustomerIntent
+    alternatives: list[Alternative]
+    attempted: list[AttemptedAlternative] = Field(default_factory=list)
+    blocked_reasons: list[RuleHit] = Field(default_factory=list)
+    explanation: str | None = None
+    customer_message_draft: str | None = None
+    policy_check: PolicyCheck
+    text_number_check: TextNumberCheck
+    paypal_called: bool
+    # Optional additions so GET /proposals/{id} can serve the execution screen.
+    approved_alternative: AlternativeType | None = None
+    paypal: PayPalExecution | None = None
+    audit_event: AuditEvent | None = None
+
+    @model_validator(mode="after")
+    def _blocked_iff_reasons(self) -> Self:
+        is_blocked = self.status is ProposalStatus.BLOCKED
+        if is_blocked != bool(self.blocked_reasons):
+            raise ValueError("blocked_reasons must be present if and only if status is BLOCKED")
+        return self
+
+
+# --- customer-facing view: one alternative, nothing internal ---------------------------------
+
+
+class CustomerAlternativeView(_TypedTerms):
+    model_config = ConfigDict(extra="forbid")
+
+    amount_due_now: Money
+    installment_amount: Money | None = None
+    total_paid: Money
+    schedule: list[ScheduleItem]
+
+
+class CustomerProposalView(BaseModel):
+    """What the customer sees. ``extra="forbid"`` so internal fields can never leak in."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    proposal_id: str
+    invoice_id: str
+    currency: Currency
+    original_balance: Money
+    alternative: CustomerAlternativeView
+    customer_message: str
+    expires_at: datetime
+    status: ProposalStatus
+    simulation_notice: str
+
+
+# --- merchant / customer action bodies and responses ------------------------------------
+
+
+class ApproveIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    alternative_type: AlternativeType
+    note: Annotated[str, StringConstraints(max_length=200)] | None = None
+
+
+class RejectIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    note: Annotated[str, StringConstraints(max_length=200)] | None = None
+
+
+class RespondIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    decision: Literal["ACCEPT", "DECLINE"]
+
+
+class ApproveOut(BaseModel):
+    proposal_id: str
+    status: ProposalStatus
+    approved_alternative: AlternativeType
+    customer_link: str
+    customer_token_expires_at: datetime
+    audit_events: list[AuditEvent]
+
+
+class RespondOut(BaseModel):
+    proposal_id: str
+    status: ProposalStatus
+    paypal: PayPalExecution | None = None
+    audit_events: list[AuditEvent]
+
+
+class ProposalStatusOut(BaseModel):
+    """Shared by reject, reconcile and sandbox record-payment."""
+
+    proposal_id: str
+    status: ProposalStatus
+    audit_events: list[AuditEvent]
+
+
+class AuditEventsPage(BaseModel):
+    items: list[AuditEvent]
+    next_seq: Annotated[int, Field(ge=0)]
 
 
 # --- errors -------------------------------------------------------------------------------

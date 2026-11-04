@@ -1,0 +1,28 @@
+{
+  "proposal_id": "prop_b27e55",
+  "status": "DECLINED",
+  "paypal": null,
+  "audit_events": [
+    {
+      "event_id": "aud_000018",
+      "seq": 18,
+      "ts": "2026-11-02T15:15:40Z",
+      "actor": {
+        "type": "CUSTOMER",
+        "id": "customer_demo"
+      },
+      "action": "CUSTOMER_DECLINED",
+      "invoice_id": "INV-001",
+      "proposal_id": "prop_b27e55",
+      "state_from": "PENDING_CUSTOMER",
+      "state_to": "DECLINED",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "Customer declined the pre-approved option; PayPal not called",
+      "proposed_by": null,
+      "paypal_called": false,
+      "source": null,
+      "paypal_ref": null
+    }
+  ]
+}
