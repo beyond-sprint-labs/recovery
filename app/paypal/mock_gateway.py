@@ -8,7 +8,7 @@ from app.core.schemas import Money
 
 from .gateway import NewInvoiceReq, PayPalError, PayPalGateway, PayPalInvoiceRef, PayPalInvoiceState
 
-# TypeAdapter permite validar tipos Annotated (como Money) fuera de un modelo
+# TypeAdapter validates Annotated types (such as Money) outside of a model
 MONEY_ADAPTER = TypeAdapter(Money)
 
 
@@ -85,7 +85,7 @@ class MockPayPalGateway(PayPalGateway):
                 f"Cannot record payment for invoice in status {invoice['status']}",
             )
 
-        # Validación estricta con Pydantic (Money)
+        # Strict validation with the shared Money type
         try:
             validated_amount = MONEY_ADAPTER.validate_python(amount)
             payment = Decimal(validated_amount)

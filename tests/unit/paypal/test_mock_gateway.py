@@ -82,7 +82,7 @@ def test_record_partial_and_full_payment(gateway, sample_req):
     ],
 )
 def test_record_payment_invalid_amounts(gateway, sample_req, invalid_amount):
-    # Regression test for Bryan and Oscar's review
+    # Regression: invalid amounts must never alter the invoice
     ref = gateway.create_draft(sample_req)
     gateway.send_invoice(ref.id)
 

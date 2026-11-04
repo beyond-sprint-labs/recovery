@@ -14,7 +14,7 @@ class PayPalError(Exception):
 
 class NewInvoiceReq(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    # We use StringConstraints to make sure a string isnt empty
+    # StringConstraints guarantees the invoice number is never empty
     invoice_number: Annotated[str, StringConstraints(min_length=1)]
     amount: Money
     currency: str = "USD"
