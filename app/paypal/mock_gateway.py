@@ -101,9 +101,7 @@ class MockPayPalGateway(PayPalGateway):
         new_paid = invoice["paid_amount"] + payment
 
         if new_paid > total:
-            raise PayPalError(
-                "OVERPAYMENT", "Payment amount exceeds total invoice amount"
-            )
+            raise PayPalError("OVERPAYMENT", "Payment amount exceeds total invoice amount")
 
         invoice["paid_amount"] = new_paid
 
