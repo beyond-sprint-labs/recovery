@@ -2,6 +2,8 @@
 
 ## Status and scope
 
+Neither scenario is part of Phase 1. Scenario B leaves twelve payable invoices open for the same debt, which violates the anti-double-charge invariant (AC11, DEC-15). Scenario A keeps a PARTIALLY_PAID invoice alive, a state our state machine intentionally does not model in Phase 1 (DEC-29b). The MVP replacement sequence requires an original invoice with no prior payments. Rates quoted as 'nominal annual' below belong to the retired exploration utilities; the MVP engine only accepts per-period rates.
+
 This exploratory spike tested alternative repayment flows through PayPal Invoicing API v2 in Sandbox. For the MVP demo, the team chose the atomic replacement sequence: create a draft invoice, cancel the original, then send the new invoice. The original must have no existing payments before replacement. This keeps payment confirmation binary, simplifies payment webhooks and avoids multiple payable invoices for the same debt. Scenarios A and B below record exploratory findings; neither is the chosen MVP flow.
 
 These experiments used MXN. The MVP database, seed invoices and Sandbox seller configuration use USD; the MXN examples do not change that currency contract.
