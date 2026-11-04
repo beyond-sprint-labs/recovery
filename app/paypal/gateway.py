@@ -1,9 +1,10 @@
-from typing import Protocol
+from typing import Annotated, Protocol
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, StringConstraints
+
+from app.core.schemas import Money
 
 
-# Typed error so the RecoveryService can catch it cleanly.
 class PayPalError(Exception):
     def __init__(self, code: str, message: str):
         self.code = code
@@ -12,10 +13,10 @@ class PayPalError(Exception):
 
 
 class NewInvoiceReq(BaseModel):
-    # Strict model for creating invoices. Prevents injections.
     model_config = ConfigDict(extra="forbid")
-    invoice_number: str
-    amount: str  # Money string
+    # We use StringConstraints to make sure a string isnt empty
+    invoice_number: Annotated[str, StringConstraints(min_length=1)]
+    amount: Money
     currency: str = "USD"
 
 
@@ -28,8 +29,6 @@ class PayPalInvoiceState(BaseModel):
     id: str
     status: str
     amount_due: str | None = None
-
-    # We use Decimal to validate partial payment logic in the mock.
     total_amount: str | None = None
 
 
