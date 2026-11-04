@@ -14,3 +14,5 @@ USD only. Amounts and rates use `Decimal` with half-up rounding to 2 decimals an
 ## Consequences
 
 No float ever appears in a contract; `test_contracts.py` rejects float literals in every example. Turning money into a JSON `number` is forbidden in every phase.
+
+Clarification (Nov 2026): Monetary amounts are quantized to two decimals with ROUND_HALF_UP. Contractual rates are preserved as Decimal with the full precision admitted by Pct (up to 4 decimals) and compared without rounding.
