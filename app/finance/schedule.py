@@ -21,7 +21,7 @@ from app.finance.engine import (
     _validate_installments,
     _validate_money,
     _validate_pct,
-    build_mthly_schedule,
+    build_monthly_schedule,
     format_money,
     money_to_decimal,
 )
@@ -150,7 +150,7 @@ def build_dated_schedule(
             context.prec = WORKING_PRECISION
             context.rounding = ROUND_HALF_UP
             rate = Decimal(request.periodic_rate_pct) / Decimal("100")
-            rows = build_mthly_schedule(financed, rate, request.installments)
+            rows = build_monthly_schedule(financed, rate, request.installments)
             if not isinstance(rows, list) or len(rows) != request.installments:
                 raise FinanceCalculationError("math hook must return one row per installment")
             result = [

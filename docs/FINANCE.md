@@ -64,8 +64,9 @@ invoice's original due date.
   independent merchant rate, and rounds once after summation.
 - `total_paid` sums all payments including the immediate one. `financing_cost`
   sums interest. `merchant_difference_vs_balance` is rounded PV minus balance.
-- If fixed cent payments would overpay before the final period, calculation
-  raises FinanceCalculationError rather than inventing a negative payment.
+- The rounded regular payment is clamped: it never falls below the period
+  interest and never exceeds what is still owed, so valid input always yields a
+  schedule. Tiny balances with many installments can end with 0.00 payments.
 
 ## Policies and service responsibilities
 
@@ -81,8 +82,13 @@ as RuleHit dictionaries with these codes:
 
 Valid terms outside a merchant limit produce `policy_ok=false` and `violations`.
 Malformed terms produce FinanceValidationError. Numerical errors, overflow and
-incompatible rounded payments produce FinanceCalculationError. Both inherit
+unrepresentable amounts produce FinanceCalculationError. Both inherit
 FinanceError. Callers must catch these errors at the service/API boundary.
+
+The contract entry point is `app.finance.calculate_alternatives(req)`: it takes an
+`EngineRequest` dictionary (`engine_version`, `invoice`, `alternatives`, `policy`)
+and returns an `EngineResult` (`engine_version`, `alternatives`). Limit checks live
+in `app.finance.policy.validate(terms, policy)`, which does no schedule math.
 
 RecoveryService must not execute a policy-blocked result. It can use `type`,
 `terms`, `amount_due_now` and `merchant_difference_vs_balance` to construct

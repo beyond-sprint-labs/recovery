@@ -122,19 +122,19 @@ class FinanceScaffoldTests(unittest.TestCase):
             finance.evaluate_cash_flows([-100.0, 100.0])
 
     def test_zero_rate_and_last_payment_residue(self):
-        rows = finance.build_mthly_schedule(Decimal("100"), Decimal("0"), 3)
+        rows = finance.build_monthly_schedule(Decimal("100"), Decimal("0"), 3)
         self.assertEqual(
             [row.amount for row in rows], [Decimal("33.33"), Decimal("33.33"), Decimal("33.34")]
         )
         self.assertTrue(all(row.interest == 0 for row in rows))
 
     def test_single_payment_zero_principal_and_contract_extremes(self):
-        rows = finance.build_mthly_schedule(Decimal("100"), Decimal("0.015"), 1)
+        rows = finance.build_monthly_schedule(Decimal("100"), Decimal("0.015"), 1)
         self.assertEqual(
             rows[0], finance.PaymentAmounts(Decimal("101.50"), Decimal("100"), Decimal("1.50"))
         )
         for principal, rate in (("0", "1"), ("1000", "1"), ("1000", "0.000001")):
-            rows = finance.build_mthly_schedule(Decimal(principal), Decimal(rate), 120)
+            rows = finance.build_monthly_schedule(Decimal(principal), Decimal(rate), 120)
             self.assertEqual(len(rows), 120)
             self.assertEqual(sum(row.principal for row in rows), Decimal(principal))
             self.assertTrue(all(row.amount == row.principal + row.interest for row in rows))
@@ -152,15 +152,19 @@ class FinanceScaffoldTests(unittest.TestCase):
                 self.subTest(principal=principal, rate=rate, count=count),
                 self.assertRaises(finance.FinanceValidationError),
             ):
-                finance.build_mthly_schedule(principal, rate, count)
+                finance.build_monthly_schedule(principal, rate, count)
 
-    def test_impossible_fixed_cent_payment_is_rejected(self):
-        with self.assertRaises(finance.FinanceCalculationError):
-            finance.build_mthly_schedule(Decimal("0.02"), Decimal("0"), 4)
+    def test_fixed_cent_payment_is_clamped_to_the_remaining_balance(self):
+        rows = finance.build_monthly_schedule(Decimal("0.02"), Decimal("0"), 4)
+        self.assertEqual(
+            [row.amount for row in rows],
+            [Decimal("0.01"), Decimal("0.01"), Decimal("0.00"), Decimal("0.00")],
+        )
+        self.assertEqual(sum(row.principal for row in rows), Decimal("0.02"))
 
     def test_wrapper_converts_rate_and_returns_contract_models(self):
         row = finance.PaymentAmounts(Decimal("102.00"), Decimal("100.00"), Decimal("2.00"))
-        with patch.object(schedule, "build_mthly_schedule", return_value=[row]) as hook:
+        with patch.object(schedule, "build_monthly_schedule", return_value=[row]) as hook:
             result = schedule.build_dated_schedule("100.00", "2.1234", 1, "2028-01-31")
         hook.assert_called_once_with(Decimal("100.00"), Decimal("0.021234"), 1)
         self.assertEqual(
@@ -183,7 +187,7 @@ class FinanceScaffoldTests(unittest.TestCase):
         ):
             with (
                 self.subTest(rows=rows),
-                patch.object(schedule, "build_mthly_schedule", return_value=rows),
+                patch.object(schedule, "build_monthly_schedule", return_value=rows),
                 self.assertRaises(finance.FinanceCalculationError),
             ):
                 schedule.build_dated_schedule("100.00", "0", 1, "2028-01-31")

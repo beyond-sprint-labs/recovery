@@ -39,10 +39,12 @@ Date generation and the public dated-schedule interface live in schedule.py.
 """
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal, DecimalException, localcontext
 
+ENGINE_VERSION = "1.0.0"
 CENT = Decimal("0.01")
 RATE_QUANTUM = Decimal("0.000001")
 RATE_OUTPUT_QUANTUM = Decimal("0.0001")
@@ -135,7 +137,7 @@ class PaymentAmounts:
     interest: Decimal
 
 
-def build_mthly_schedule(
+def build_monthly_schedule(
     principal: Decimal, rate_per_period: Decimal, n_periods: int
 ) -> list[PaymentAmounts]:
     """End-of-period amortization: payment = LOAN / a_n,i, using Decimal only.
@@ -174,12 +176,11 @@ def build_mthly_schedule(
             rows = []
             for period in range(1, n_periods + 1):
                 interest = (balance * rate_per_period).quantize(CENT, rounding=ROUND_HALF_UP)
-                amount = balance + interest if period == n_periods else payment
+                due = balance + interest
+                # Clamp the rounded fixed payment so the schedule is defined for every
+                # valid input: never below the period interest, never above what is owed.
+                amount = due if period == n_periods else min(max(payment, interest), due)
                 principal_paid = amount - interest
-                if principal_paid < 0 or principal_paid > balance:
-                    raise FinanceCalculationError(
-                        "rounded fixed payment is incompatible with the remaining balance"
-                    )
                 rows.append(PaymentAmounts(amount, principal_paid, interest))
                 balance -= principal_paid
             return rows
@@ -375,6 +376,7 @@ def build_alternative(
     """
     # schedule depends on the low-level math in this module. Importing here
     # keeps those helpers independently usable without a circular startup import.
+    from app.finance.policy import validate
     from app.finance.schedule import _parse_date, build_dated_schedule
 
     original = money_to_decimal(balance)
@@ -388,17 +390,8 @@ def build_alternative(
         raise FinanceValidationError("policy must be FinancialPolicy or a Policy dictionary")
     if not isinstance(terms, dict):
         raise FinanceValidationError("terms must be a dictionary")
-    violations = []
-
-    def check(
-        code: str, attempted: str, limit: str, *, minimum: bool = False, unit: str = "pct"
-    ) -> None:
-        # Compare exact Decimals, without quantizing percentages.
-        invalid = (
-            Decimal(attempted) < Decimal(limit) if minimum else Decimal(attempted) > Decimal(limit)
-        )
-        if invalid:
-            violations.append({"code": code, "limit": limit, "attempted": attempted, "unit": unit})
+    # Policy first: pure limit checks on the terms, before any schedule math.
+    violations = validate(terms, policy)
 
     try:
         with localcontext() as context:
@@ -422,7 +415,6 @@ def build_alternative(
                     }
                 ]
                 installment_amount = None
-                check("MAX_DISCOUNT_PCT", discount_pct, policy.max_discount_pct)
             elif alternative_type == "down_payment_installments":
                 if set(terms) != {"down_payment_pct", "installments", "periodic_rate_pct"}:
                     raise FinanceValidationError("installment terms must match InstallmentTerms")
@@ -446,9 +438,6 @@ def build_alternative(
                     *future,
                 ]
                 installment_amount = future[0]["amount"]
-                check("MIN_DOWN_PAYMENT_PCT", down_pct, policy.min_down_payment_pct, minimum=True)
-                check("MAX_INSTALLMENTS", str(count), str(policy.max_installments), unit="count")
-                check("MAX_FINANCING_RATE_PCT", rate_pct, policy.max_financing_rate_pct)
             else:
                 raise FinanceValidationError("unknown alternative type")
             flows = [Decimal(row["amount"]) for row in schedule]
@@ -494,3 +483,61 @@ def build_alternatives(
             ("down_payment_installments", installment_terms),
         )
     ]
+
+
+_REQUEST_KEYS = frozenset({"engine_version", "invoice", "alternatives", "policy"})
+_INVOICE_KEYS = frozenset({"id", "currency", "balance", "due_date", "as_of_date"})
+_ALTERNATIVE_FIELDS: dict[str, frozenset[str]] = {
+    "settlement_discount": frozenset({"discount_pct"}),
+    "down_payment_installments": frozenset(
+        {"down_payment_pct", "installments", "periodic_rate_pct"}
+    ),
+}
+
+
+def calculate_alternatives(req: Mapping[str, object]) -> dict[str, object]:
+    """Contract entry point: EngineRequest in, EngineResult out (pure, no I/O).
+
+    The request carries engine_version, the invoice (balance and as_of_date, which
+    is the valuation/payment start date), the requested alternatives and the
+    server-owned policy. A policy without currency inherits the invoice currency.
+    Policy violations are reported per alternative (policy_ok=False); malformed
+    requests raise FinanceValidationError. Unknown request keys are rejected.
+    """
+    from app.finance.schedule import _parse_date
+
+    if not isinstance(req, Mapping) or set(req) != _REQUEST_KEYS:
+        raise FinanceValidationError(
+            "request must contain exactly engine_version, invoice, alternatives and policy"
+        )
+    if req["engine_version"] != ENGINE_VERSION:
+        raise FinanceValidationError(f"unsupported engine_version, expected {ENGINE_VERSION}")
+    invoice = req["invoice"]
+    if not isinstance(invoice, Mapping) or set(invoice) != _INVOICE_KEYS:
+        raise FinanceValidationError("invoice must match the EngineRequest invoice fields")
+    _parse_date(invoice["due_date"])
+    policy = req["policy"]
+    if not isinstance(policy, Mapping):
+        raise FinanceValidationError("policy must be a dictionary")
+    alternatives = req["alternatives"]
+    if not isinstance(alternatives, list) or not alternatives:
+        raise FinanceValidationError("alternatives must be a non-empty list")
+
+    results = []
+    for item in alternatives:
+        kind = item.get("type") if isinstance(item, Mapping) else None
+        if kind not in _ALTERNATIVE_FIELDS:
+            raise FinanceValidationError("unknown alternative type")
+        terms = {key: value for key, value in item.items() if key != "type"}
+        if set(terms) != _ALTERNATIVE_FIELDS[kind]:
+            raise FinanceValidationError(f"{kind} terms do not match the contract fields")
+        results.append(
+            build_alternative(
+                balance=invoice["balance"],
+                alternative_type=kind,
+                terms=terms,
+                policy={"currency": invoice["currency"], **policy},
+                pivot_date=invoice["as_of_date"],
+            )
+        )
+    return {"engine_version": ENGINE_VERSION, "alternatives": results}
