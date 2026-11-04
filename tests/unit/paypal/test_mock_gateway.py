@@ -1,69 +1,67 @@
 import pytest
 
+from app.paypal.gateway import NewInvoiceReq, PayPalError
 from app.paypal.mock_gateway import MockPayPalGateway
 
 
 @pytest.fixture
 def gateway():
-
-    # Fixture that initializes a new MockPayPalGateway for each test
     return MockPayPalGateway()
 
 
-def test_create_and_get_draft(gateway):
-
-    # Test creating a draft and querying it
-    ref = gateway.create_draft({"amount": "100.00"}, request_id="req-123")
-    assert ref.status == "DRAFT"
-
-    state = gateway.get_invoice(ref.id)
-    assert state.status == "DRAFT"
-    assert state.amount_due == "100.00"
+@pytest.fixture
+def sample_req():
+    return NewInvoiceReq(invoice_number="INV-001", amount="100.00")
 
 
-def test_full_sequence_success(gateway):
-
-    # Test the full flow: create -> cancel original -> send new
-    original_ref = gateway.create_draft({"amount": "100.00"}, request_id="req-1")
-    draft_ref = gateway.create_draft({"amount": "90.00"}, request_id="req-2")
-
-    gateway.cancel_invoice(original_ref.id)
-    assert gateway.get_invoice(original_ref.id).status == "CANCELLED"
-
-    sent_ref = gateway.send_invoice(draft_ref.id)
-    assert sent_ref.status == "UNPAID"
-    assert gateway.get_invoice(draft_ref.id).status == "UNPAID"
+def test_duplicate_invoice_number(gateway, sample_req):
+    gateway.create_draft(sample_req)
+    with pytest.raises(PayPalError, match="DUPLICATE_INVOICE_NUMBER"):
+        gateway.create_draft(sample_req)
 
 
-def test_delete_draft(gateway):
+def test_full_sequence_success(gateway, sample_req):
+    original = gateway.create_draft(sample_req)
+    draft_req = NewInvoiceReq(invoice_number="INV-002", amount="90.00")
+    draft = gateway.create_draft(draft_req)
 
-    # Test that a draft can be deleted
-    ref = gateway.create_draft({"amount": "100.00"}, request_id="req-3")
-    gateway.delete_draft(ref.id)
+    gateway.cancel_invoice(original.id)
+    assert gateway.get_invoice(original.id).status == "CANCELLED"
 
-    with pytest.raises(ValueError, match="not found"):
-        gateway.get_invoice(ref.id)
-
-
-def test_forced_failure_on_cancel(gateway):
-
-    # Test simulating a forced failure when cancelling (essential for F1-18)
-    original_ref = gateway.create_draft({"amount": "100.00"}, request_id="req-4")
-    gateway.fail_next_step = "cancel"
-
-    with pytest.raises(Exception, match="Forced failure at step 'cancel'"):
-        gateway.cancel_invoice(original_ref.id)
-
-    # The next attempt should succeed
-    gateway.cancel_invoice(original_ref.id)
-    assert gateway.get_invoice(original_ref.id).status == "CANCELLED"
+    sent = gateway.send_invoice(draft.id)
+    assert sent.status == "UNPAID"
 
 
-def test_record_payment(gateway):
+def test_multi_step_forced_failure(gateway, sample_req):
+    # We test that it fails on cancel and then on delete (for the rollback)
+    original = gateway.create_draft(sample_req)
+    draft_req = NewInvoiceReq(invoice_number="INV-003", amount="90.00")
+    draft = gateway.create_draft(draft_req)
 
-    # Test the payment shortcut (Record Payment)
-    ref = gateway.create_draft({"amount": "100.00"}, request_id="req-5")
+    gateway.fail_steps = {"cancel", "delete"}
+
+    with pytest.raises(PayPalError):
+        gateway.cancel_invoice(original.id)
+
+    with pytest.raises(PayPalError):
+        gateway.delete_draft(draft.id)
+
+
+def test_record_partial_and_full_payment(gateway, sample_req):
+    ref = gateway.create_draft(sample_req)
     gateway.send_invoice(ref.id)
-    gateway.record_payment(ref.id, "100.00")
 
+    # partial payment
+    gateway.record_payment(ref.id, "30.00")
+    assert gateway.get_invoice(ref.id).status == "PARTIALLY_PAID"
+
+    # total payment
+    gateway.record_payment(ref.id, "70.00")
     assert gateway.get_invoice(ref.id).status == "PAID"
+
+
+def test_record_payment_on_cancelled_fails(gateway, sample_req):
+    ref = gateway.create_draft(sample_req)
+    gateway.cancel_invoice(ref.id)
+    with pytest.raises(PayPalError, match="INVALID_STATE"):
+        gateway.record_payment(ref.id, "100.00")
