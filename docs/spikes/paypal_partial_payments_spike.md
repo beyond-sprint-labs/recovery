@@ -2,7 +2,9 @@
 
 ## Status and scope
 
-This hackathon exploration tested two ways to represent an agreed monthly repayment plan through PayPal Invoicing API v2 in Sandbox. It records observed REST behavior and proposes a direction for integration review.
+This exploratory spike tested alternative repayment flows through PayPal Invoicing API v2 in Sandbox. For the MVP demo, the team chose the atomic replacement sequence: create a draft invoice, cancel the original, then send the new invoice. The original must have no existing payments before replacement. This keeps payment confirmation binary, simplifies payment webhooks and avoids multiple payable invoices for the same debt. Scenarios A and B below record exploratory findings; neither is the chosen MVP flow.
+
+These experiments used MXN. The MVP database, seed invoices and Sandbox seller configuration use USD; the MXN examples do not change that currency contract.
 
 **This is exploratory evidence, not a production integration or an implementation proposal ready to merge into the application.** No application routes, LangGraph tools, persistence, payment allocation, webhook handlers or customer approval workflow are implemented by this document. The local experiment scripts and raw account responses are outside this PR.
 
@@ -83,9 +85,9 @@ This accepted Sandbox update is **not a reviewed accounting treatment** for tran
 
 The unrounded theoretical payment is MXN 6.619171763606602. The present value of the collectible, cent-rounded payments at 2% monthly is MXN 70.00087395071591; the difference from MXN 70 is below one cent. The final balance is zero under the disclosed per-installment rounding convention. This distinction needs to remain visible in financial validation.
 
-## Recommended direction: one invoice, one versioned repayment agreement
+## Exploratory assessment: one invoice, one versioned repayment agreement
 
-**Scenario A is the conceptually cleaner starting point for integration review.** It retains one invoice identity, the original consumption line and the existing payment history. Financing is explicit as a separate line item, while Recovery holds the versioned agreement and its installment calendar.
+**Within this spike, Scenario A was considered the conceptually cleaner option for preserving an existing partial-payment history.** This assessment is retained as research context, not as the chosen MVP direction. It retains one invoice identity, the original consumption line and the existing payment history. Financing is explicit as a separate line item, while Recovery holds the versioned agreement and its installment calendar.
 
 This recommendation prioritizes continuity of the receivable and audit trail. It is not a claim that PayPal natively enforces the calendar. Recovery would need to own installment-level due dates, payment allocation, reminders, arrears and agreement revisions.
 
@@ -101,7 +103,9 @@ PayPal documents invoice attachment references in `detail.attachments`, includin
 
 PDF generation, file storage or upload, access control, attachment delivery and the customer download experience remain integration work. **No PDF or TXT attachment was uploaded in this exploration.** A TXT table was generated locally, and the complete table was included in customer-visible invoice notes. Attachment support in the schema is not evidence of successful end-to-end attachment delivery.
 
-## Proposed action plan: review before implementation
+## Future research considerations outside the MVP flow
+
+The following questions apply only if the team revisits these alternative flows. They do not replace the chosen MVP atomic replacement sequence or expand its scope.
 
 1. **Review the representation.** Agree whether one original invoice plus a Recovery agreement is the preferred model. Confirm accounting treatment of financing, discounts, payment history and future revisions. Keep B as a fallback, not a parallel collectible debt.
 2. **Review platform and contractual applicability.** Confirm which PayPal product and merchant/customer jurisdictions apply to merchant-added financing charges. Sandbox acceptance is a technical result, not contractual authorization or a regulatory rate disclosure.
