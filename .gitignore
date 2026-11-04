@@ -26,3 +26,8 @@ ui/dist/
 .idea/
 .vscode/*
 !.vscode/launch.json
+
+# Notebook checkpoints and generated finance chart
+.ipynb_checkpoints/
+finance_utils_amortization.png
+.review-tools/

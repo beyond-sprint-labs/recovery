@@ -1,0 +1,21 @@
+{
+  "event_id": "aud_000005",
+  "seq": 5,
+  "ts": "2026-11-02T15:04:11Z",
+  "actor": {
+    "type": "SYSTEM",
+    "id": "recovery_service"
+  },
+  "action": "PROPOSAL_DRAFTED",
+  "invoice_id": "INV-001",
+  "proposal_id": "prop_7f3a9c",
+  "state_from": "DRAFTED",
+  "state_to": "PENDING_MERCHANT",
+  "severity": "INFO",
+  "rule": null,
+  "summary": "2 alternatives drafted within policy; awaiting merchant approval",
+  "proposed_by": null,
+  "paypal_called": false,
+  "source": null,
+  "paypal_ref": null
+}

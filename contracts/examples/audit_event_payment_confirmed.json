@@ -1,0 +1,21 @@
+{
+  "event_id": "aud_000017",
+  "seq": 17,
+  "ts": "2026-11-02T15:13:05Z",
+  "actor": {
+    "type": "PAYPAL",
+    "id": "paypal_webhook"
+  },
+  "action": "PAYMENT_CONFIRMED",
+  "invoice_id": "INV-001",
+  "proposal_id": "prop_7f3a9c",
+  "state_from": "EXECUTED",
+  "state_to": "PAID",
+  "severity": "INFO",
+  "rule": null,
+  "summary": "First scheduled payment confirmed ($300.00)",
+  "proposed_by": null,
+  "paypal_called": true,
+  "source": "WEBHOOK",
+  "paypal_ref": "INV2-K4M9-2P7X-8Q3N-V5RD"
+}

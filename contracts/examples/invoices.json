@@ -1,0 +1,11 @@
+[
+  {
+    "id": "INV-001",
+    "customer_name": "Northwind Demo LLC",
+    "currency": "USD",
+    "balance": "1000.00",
+    "due_date": "2026-10-15",
+    "status": "OVERDUE",
+    "paypal_invoice_id": "INV2-6W2K-7D9Q-4M3P-R8TX"
+  }
+]
