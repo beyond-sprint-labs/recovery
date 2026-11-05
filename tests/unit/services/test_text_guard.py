@@ -138,6 +138,163 @@ def test_decimal_precision_edge_cases():
     assert "900.001" in result.unmatched
 
 
+def test_negative_monetary_value_not_allowed():
+    allowed = _allowed("850.00")
+    result = check_text_numbers(["Total is $-850.00"], allowed)
+
+    assert result.status == "FAILED"
+    assert "-850.00" in result.unmatched
+
+
+def test_negative_small_decimal_not_allowed():
+    allowed = _allowed("0.50")
+    result = check_text_numbers(["Adjustment of -0.50"], allowed)
+
+    assert result.status == "FAILED"
+    assert "-0.50" in result.unmatched
+
+
+def test_positive_number_allowed():
+    allowed = _allowed("850.00")
+    result = check_text_numbers(["Total is $850.00"], allowed)
+
+    assert result.status == "PASSED"
+    assert result.unmatched == []
+
+
+def test_zero_amount_allowed():
+    allowed = _allowed("0.00")
+    result = check_text_numbers(["Balance is 0.00"], allowed)
+
+    assert result.status == "PASSED"
+    assert result.unmatched == []
+
+
+def test_negative_when_only_zero_authorized():
+    allowed = _allowed("0.00")
+    result = check_text_numbers(["Charge of -5.00 applied"], allowed)
+
+    assert result.status == "FAILED"
+    assert "-5.00" in result.unmatched
+
+
+def test_negative_with_thousands_separator_not_allowed():
+    allowed = _allowed("1021.10")
+    result = check_text_numbers(["Total is $-1,021.10"], allowed)
+
+    assert result.status == "FAILED"
+    assert "-1021.10" in result.unmatched
+
+
+def test_malformed_numeric_token_not_extracted():
+    allowed = _allowed("900.00")
+    result = check_text_numbers(["Value is --900 and $-$"], allowed)
+
+    assert result.status == "PASSED"
+    assert result.numbers_in_text == []
+    assert result.unmatched == []
+
+
+def test_european_comma_decimal_not_extracted():
+    allowed = _allowed("900.00")
+    result = check_text_numbers(["Amount is 900,00"], allowed)
+
+    assert result.status == "PASSED"
+    assert result.numbers_in_text == []
+    assert result.unmatched == []
+
+
+def test_invalid_thousands_separator_not_extracted():
+    allowed = _allowed("100.00")
+    result = check_text_numbers(["Value is 1,23"], allowed)
+
+    assert result.status == "PASSED"
+    assert result.numbers_in_text == []
+    assert result.unmatched == []
+
+
+def test_valid_thousands_separator_normalized():
+    allowed = _allowed("1021.10")
+    result = check_text_numbers(["Total: $1,021.10"], allowed)
+
+    assert result.status == "PASSED"
+    assert result.unmatched == []
+    assert "1021.10" in result.numbers_in_text
+
+
+def test_negative_thousands_separator_not_allowed():
+    allowed = _allowed("1021.10")
+    result = check_text_numbers(["Total is $-1,021.10"], allowed)
+
+    assert result.status == "FAILED"
+    assert "-1021.10" in result.unmatched
+
+
+# ---------------------------------------------------------------------------
+# S11 scenario fixture test
+# ---------------------------------------------------------------------------
+
+
+def test_s11_scenario_fixture_produces_text_number_mismatch():
+    """Validate the S11 scenario fixture produces TEXT_NUMBER_MISMATCH."""
+    import json
+    from pathlib import Path
+
+    fixture_path = (
+        Path(__file__).resolve().parent.parent.parent / "scenarios" / "text_mismatch.json"
+    )
+    with fixture_path.open("r", encoding="utf-8") as f:
+        scenario = json.load(f)
+
+    assert scenario["scenario_id"] == "S11"
+    assert scenario["expected_status"] == "BLOCKED"
+    assert scenario["expected_rule_code"] == "TEXT_NUMBER_MISMATCH"
+
+    # Build allowed numbers from the engine result in the fixture
+    engine = scenario["engine_result"]
+    allowed_values: set[Decimal] = set()
+
+    for alt in engine["alternatives"]:
+        terms = alt["terms"]
+        if "discount_pct" in terms:
+            allowed_values.add(Decimal(terms["discount_pct"]))
+        if "down_payment_pct" in terms:
+            allowed_values.add(Decimal(terms["down_payment_pct"]))
+        if "installments" in terms:
+            allowed_values.add(Decimal(str(terms["installments"])))
+        if "periodic_rate_pct" in terms:
+            allowed_values.add(Decimal(terms["periodic_rate_pct"]))
+
+        if "computed" in alt:
+            for value in alt["computed"].values():
+                allowed_values.add(Decimal(value))
+
+        for key in (
+            "amount_due_now",
+            "installment_amount",
+            "total_paid",
+            "present_value",
+            "financing_cost",
+            "merchant_difference_vs_balance",
+        ):
+            if key in alt:
+                allowed_values.add(Decimal(alt[key]))
+
+        for item in alt.get("schedule", []):
+            for key in ("amount", "principal", "interest"):
+                if key in item:
+                    allowed_values.add(Decimal(item[key]))
+
+    allowed = AllowedNumbers(values=allowed_values)
+    result = check_text_numbers([scenario["generated_explanation"]], allowed)
+
+    expected = scenario["expected_text_number_check"]
+    assert result.status == expected["status"]
+    assert result.numbers_in_text == expected["numbers_in_text"]
+    assert result.unmatched == expected["unmatched"]
+    assert scenario["altered_number"] in result.unmatched
+
+
 def test_number_attached_to_word_is_not_extracted():
     allowed = _allowed("900.00")
     result = check_text_numbers(["$900.00extra"], allowed)

@@ -4,6 +4,20 @@ Validates that every numeric value appearing in generated output text belongs to
 an allowed set of figures from the finance engine, customer intent, and merchant
 policy. Solely responsible for output validation; does not perform input
 sanitization or prompt-injection detection.
+
+Supported numeric formats:
+- Plain integers: ``3``, ``10``
+- Plain decimals: ``900.00``, ``0.50``, ``1021.10``
+- Currency amounts: ``$900.00``, ``$1,021.10``
+- Negative amounts: ``-850.00``, ``-0.50``, ``-$850.00``
+- Percentages: ``10%``
+- Thousands separators: ``1,021.10`` (comma groups exactly three digits)
+
+Not supported and never silently extracted:
+- European-style comma decimals: ``900,00`` is not matched at all.
+- Numbers embedded in identifiers: ``INV-001`` is ignored.
+- Numbers embedded in words: ``hello2world`` is ignored.
+- Numbers attached to trailing text: ``$900.00extra`` is ignored.
 """
 
 from __future__ import annotations
@@ -14,14 +28,23 @@ from decimal import Decimal, InvalidOperation
 
 from app.core.schemas import TextNumberCheck
 
-# Extract numbers with optional $ prefix, thousands separators, decimal part,
-# and optional % suffix. Not preceded by alphanumeric/underscore/hyphen (so
-# INV-001 is ignored), not followed by alphanumeric (so hello2world is ignored).
-# The negative lookahead (?!\.\d) prevents matching just the integer part of a
-# decimal number that is followed by more text (e.g. $900.00extra should not
-# yield 900).
+# Extract numbers with optional leading minus sign, optional $ prefix,
+# thousands separators (comma groups exactly three digits), optional decimal
+# part, and optional % suffix.
+#
+# Lookbehind (?<![A-Za-z0-9_-,]) prevents matching numbers that are part of
+# identifiers such as INV-001 (the hyphen before 001 blocks the match) and
+# prevents extracting fragments of European-style comma decimals such as
+# 900,00 (the comma before 00 blocks the fragment match).
+#
+# Lookahead (?!\.\d) prevents matching just the integer part of a decimal
+# followed by more text (e.g. $900.00extra should not yield 900).
+#
+# Lookahead (?!,\d{1,2}(?!\d)) prevents silently extracting the integer part
+# of a European-style comma decimal such as 900,00 (the comma followed by one
+# or two digits is not a valid thousands separator in this parser).
 _NUMBER_RE = re.compile(
-    r"(?<![A-Za-z0-9_-])\$?(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)(?!\.\d)\%?(?![A-Za-z0-9])"
+    r"(?<![A-Za-z0-9_,-])(-?\$?\d{1,3}(?:,\d{3})*(?:\.\d+)?|-?\$?\d+(?:\.\d+)?)(?!\.\d)(?!,\d{1,2}(?!\d))\%?(?![A-Za-z0-9])"
 )
 
 
@@ -40,10 +63,10 @@ class AllowedNumbers:
 def _normalize_number(raw: str) -> Decimal | None:
     """Normalize an extracted numeric string to Decimal.
 
-    Strips optional thousands separators and converts to Decimal. Returns None
-    if the string cannot be parsed.
+    Strips optional currency symbols and thousands separators and converts to
+    Decimal. Returns None if the string cannot be parsed.
     """
-    cleaned = raw.replace(",", "")
+    cleaned = raw.replace(",", "").replace("$", "")
     try:
         return Decimal(cleaned)
     except (InvalidOperation, ValueError, ArithmeticError):
