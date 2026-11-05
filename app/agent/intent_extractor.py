@@ -2,7 +2,6 @@
 
 from app.agent.llm_client import LLMClient
 from app.core.schemas import CustomerIntent
-from app.services.input_sanitizer import sanitize_customer_message
 
 SYSTEM_PROMPT = """
 You are the intent extraction component of Recovery.
@@ -31,19 +30,17 @@ def extract_intent(
     message: str,
     client: LLMClient,
 ) -> CustomerIntent:
-    """Extract and validate customer intent using an LLM client."""
+    """Extract intent from an already sanitized customer message."""
 
     if not isinstance(message, str):
         raise TypeError("Customer message must be a string")
 
-    sanitized = sanitize_customer_message(message)
-
-    if not sanitized.text:
+    if not message.strip():
         raise ValueError("Customer message cannot be empty")
 
     response = client.complete(
         system=SYSTEM_PROMPT,
-        user=sanitized.text,
+        user=message,
         schema=CustomerIntent,
     )
 

@@ -1,8 +1,8 @@
-"""Tests for the initial Recovery agent orchestration."""
+"""Tests for Recovery F1-06 agent orchestration."""
 
 import pytest
 
-from app.agent.agent import RecoveryAgent
+from app.agent.agent import AgentOutput, RecoveryAgent
 from app.core.schemas import CustomerIntent
 
 
@@ -31,8 +31,10 @@ def test_agent_calls_tool_for_valid_intent():
         fake_tool_runner,
     )
 
+    assert isinstance(output, AgentOutput)
     assert output.intent == intent
-    assert output.tool_result == {"status": "SIMULATED"}
+    assert output.explanation is None
+    assert output.customer_message_draft is None
     assert received == [intent]
 
 
@@ -47,7 +49,8 @@ def test_agent_does_not_call_tool_for_empty_intent():
     output = agent.run("Hello", fake_tool_runner)
 
     assert output.intent == CustomerIntent()
-    assert output.tool_result is None
+    assert output.explanation is None
+    assert output.customer_message_draft is None
     assert calls == []
 
 
@@ -65,12 +68,13 @@ def test_agent_passes_excessive_discount_to_backend():
         fake_tool_runner,
     )
 
-    assert received[0].requested_discount_pct == "40"
-    assert output.tool_result["status"] == "BLOCKED"
+    assert received == [intent]
+    assert output.intent.requested_discount_pct == "40"
+    assert output.explanation is None
+    assert output.customer_message_draft is None
 
 
 def test_agent_propagates_finance_engine_failure():
-    """Financial tool failures must never become fake approvals."""
     intent = CustomerIntent(available_now="300.00")
     agent = RecoveryAgent(FakeLLMClient(intent))
 
@@ -82,7 +86,6 @@ def test_agent_propagates_finance_engine_failure():
 
 
 def test_agent_does_not_call_tool_for_greeting():
-    """Messages without payment intent must not trigger tools."""
     agent = RecoveryAgent(FakeLLMClient(CustomerIntent()))
 
     def forbidden_tool_runner(customer_intent):
@@ -91,4 +94,5 @@ def test_agent_does_not_call_tool_for_greeting():
     output = agent.run("Hello, good morning", forbidden_tool_runner)
 
     assert output.intent == CustomerIntent()
-    assert output.tool_result is None
+    assert output.explanation is None
+    assert output.customer_message_draft is None

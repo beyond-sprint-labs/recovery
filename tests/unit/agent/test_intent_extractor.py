@@ -72,8 +72,8 @@ def test_invalid_client_response_is_rejected():
         extract_intent("I can pay today", client)
 
 
-def test_input_is_sanitized_before_llm():
-    """Verify that the LLM receives sanitized customer text."""
+def test_extractor_receives_pre_sanitized_message():
+    """The extractor forwards the server-sanitized message."""
 
     class CapturingClient(FakeLLMClient):
         def complete(self, system, user, schema):
@@ -82,15 +82,21 @@ def test_input_is_sanitized_before_llm():
 
     client = CapturingClient(CustomerIntent())
 
-    extract_intent("Hello\u200b   world", client)
+    extract_intent("Hello world", client)
 
     assert client.received_message == "Hello world"
 
 
-def test_control_only_message_is_rejected():
-    """Reject messages that become empty after sanitization."""
+def test_extractor_does_not_sanitize_internally():
+    """Input sanitization belongs to RecoveryService."""
 
-    client = FakeLLMClient(CustomerIntent())
+    class CapturingClient(FakeLLMClient):
+        def complete(self, system, user, schema):
+            self.received_message = user
+            return super().complete(system, user, schema)
 
-    with pytest.raises(ValueError):
-        extract_intent("\u200b\u202e", client)
+    client = CapturingClient(CustomerIntent())
+
+    extract_intent("Hello   world", client)
+
+    assert client.received_message == "Hello   world"

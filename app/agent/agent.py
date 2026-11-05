@@ -1,7 +1,6 @@
-"""Initial orchestration for Recovery F1-06."""
+"""Recovery F1-06 agent orchestration."""
 
 from collections.abc import Callable
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
@@ -9,21 +8,23 @@ from app.agent.intent_extractor import extract_intent
 from app.agent.llm_client import LLMClient
 from app.core.schemas import CustomerIntent
 
-# Provisional contract: confirm with F1-13 owner.
-ToolRunner = Callable[[CustomerIntent], dict[str, Any]]
+# The backend owns invoice balance, dates, policy, and calculations.
+# Replace object with EngineResult when its shared type is available.
+ToolRunner = Callable[[CustomerIntent], object]
 
 
 class AgentOutput(BaseModel):
-    """Provisional structured agent result."""
+    """Structured agent output agreed with the backend."""
 
     model_config = ConfigDict(extra="forbid")
 
     intent: CustomerIntent
-    tool_result: dict[str, Any] | None = None
+    explanation: str | None = None
+    customer_message_draft: str | None = None
 
 
 class RecoveryAgent:
-    """Extract customer intent and delegate financial work."""
+    """Extract intent and delegate financial calculations."""
 
     def __init__(self, client: LLMClient):
         self.client = client
@@ -33,7 +34,7 @@ class RecoveryAgent:
         message: str,
         tool_runner: ToolRunner,
     ) -> AgentOutput:
-        """Run the agent without calculating financial figures."""
+        """Process a server-sanitized customer message."""
 
         intent = extract_intent(message, self.client)
 
@@ -50,9 +51,8 @@ class RecoveryAgent:
         if not has_intent:
             return AgentOutput(intent=intent)
 
-        result = tool_runner(intent)
+        # The backend supplies all financial context.
+        # Result handling and drafting belong to the next stage.
+        tool_runner(intent)
 
-        return AgentOutput(
-            intent=intent,
-            tool_result=result,
-        )
+        return AgentOutput(intent=intent)
