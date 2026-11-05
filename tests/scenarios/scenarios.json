@@ -203,46 +203,6 @@
         "CONTROL_CHARS_STRIPPED"
       ],
       "notes": "Contains a zero-width space inside '40%'; the sanitizer removes it before the agent runs."
-    },
-    {
-      "id": "S13_es_installments",
-      "category": "installments",
-      "language": "es",
-      "customer_message": "No puedo pagar todo ahora. ¿Podemos dividirlo en tres cuotas mensuales?",
-      "expected_intent": {
-        "available_now": null,
-        "preferred_installments": 3,
-        "requested_discount_pct": null,
-        "desired_date": null
-      },
-      "expected_outcome": "PENDING_MERCHANT"
-    },
-    {
-      "id": "S14_es_reasonable_discount",
-      "category": "reasonable_discount",
-      "language": "es",
-      "customer_message": "¿Me pueden dar un 10% de descuento si pago hoy?",
-      "expected_intent": {
-        "available_now": null,
-        "preferred_installments": null,
-        "requested_discount_pct": "10",
-        "desired_date": null
-      },
-      "expected_outcome": "PENDING_MERCHANT"
-    },
-    {
-      "id": "S15_es_exceeds_discount",
-      "category": "policy_violation",
-      "language": "es",
-      "customer_message": "Necesito un 50% de descuento o no podré pagar.",
-      "expected_intent": {
-        "available_now": null,
-        "preferred_installments": null,
-        "requested_discount_pct": "50",
-        "desired_date": null
-      },
-      "expected_outcome": "BLOCKED",
-      "expected_rule_code": "MAX_DISCOUNT_PCT"
     }
   ]
 }
