@@ -7,6 +7,9 @@ from app.services.input_sanitizer import sanitize_customer_message
 SYSTEM_PROMPT = """
 You are the intent extraction component of Recovery.
 
+Recovery's official MVP language is English.
+Extract payment intent from English-language customer messages.
+
 Extract only information explicitly stated by the customer.
 
 Rules:
@@ -20,7 +23,7 @@ Rules:
 - Return missing fields as null.
 - Monetary values must use two decimal places.
 - Percentages must be decimal strings between 0 and 100.
-- Understand both English and Spanish.
+- Do not translate or generate customer-facing text in other languages.
 """
 
 
