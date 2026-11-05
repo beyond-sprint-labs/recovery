@@ -96,3 +96,40 @@ def test_agent_does_not_call_tool_for_greeting():
     assert output.intent == CustomerIntent()
     assert output.explanation is None
     assert output.customer_message_draft is None
+
+
+def test_agent_delegates_only_customer_intent():
+    """F1-06 must not supply server-owned financial context."""
+    intent = CustomerIntent(
+        available_now="300.00",
+        preferred_installments=3,
+    )
+
+    agent = RecoveryAgent(FakeLLMClient(intent))
+    received = []
+
+    def fake_tool_runner(requested_terms):
+        received.append(requested_terms)
+        return {
+            "engine_version": "1.0.0",
+            "alternatives": [],
+        }
+
+    output = agent.run(
+        "I can pay $300 in three installments",
+        fake_tool_runner,
+    )
+
+    assert received == [intent]
+    assert isinstance(received[0], CustomerIntent)
+
+    assert set(received[0].model_dump()) == {
+        "available_now",
+        "preferred_installments",
+        "requested_discount_pct",
+        "desired_date",
+    }
+
+    assert output.intent == intent
+    assert output.explanation is None
+    assert output.customer_message_draft is None
