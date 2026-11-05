@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.core.db import get_session_factory
+from app.repositories.audit_repo import AuditRepo
+from app.services.audit_service import AuditService
 
 
 def get_db() -> Iterator[Session]:
@@ -18,3 +20,10 @@ def get_db() -> Iterator[Session]:
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 DbSession = Annotated[Session, Depends(get_db)]
+
+
+def get_audit_service(session: DbSession) -> AuditService:
+    return AuditService(AuditRepo(session))
+
+
+AuditServiceDep = Annotated[AuditService, Depends(get_audit_service)]
