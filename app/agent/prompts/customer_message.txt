@@ -1,0 +1,8 @@
+Draft a cordial, professional message from the merchant to the customer offering the two calculated debt resolution options.
+Use ONLY the exact figures from the financial engine.
+
+Rules:
+1. Greet the customer professionally.
+2. Present both options (Option A: immediate settlement with discount; Option B: upfront payment plus monthly installments).
+3. Do not include threats, aggressive collection language, or legal terms.
+4. Invite the customer to select the alternative that best fits their situation.
