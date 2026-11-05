@@ -19,6 +19,11 @@ value -850.00. Any other grouping or decimal convention, such as ``900,00``,
 ``1,5``, ``1.021,50`` or ``1,2,3``, is UNSUPPORTED and fails closed: it is
 reported verbatim in both ``numbers_in_text`` and ``unmatched``, so the proposal
 is blocked instead of being misread.
+
+Numbers adjacent to letters (before or after) are also unsupported: they are
+extracted and reported in ``numbers_in_text`` and ``unmatched`` so that
+``Pay $850.00USD today`` and ``USD850.00`` fail closed instead of being silently
+ignored.
 """
 
 from __future__ import annotations
@@ -35,22 +40,23 @@ __all__ = ["AllowedNumbers", "check_text_numbers"]
 # Candidate numeric token: digits optionally joined by "." or ",". Digits are
 # strictly ASCII [0-9]; text is normalized by ``_normalize_text`` before matching.
 #
-# - Not preceded by an alphanumeric or "_" (so "item2costs" yields nothing).
-# - Not preceded by a letter/"_" plus "-" (so the "001" in INV-001 is ignored). A
-#   minus that does not follow a letter, as in "-850.00", is the sign of the figure.
+# - Not preceded by a digit (so part of a larger number is not matched again).
 # - Not preceded by a digit plus "." or "," (so when the head of a number is
 #   rejected, its tail, for example the "00" of "INV-12.00", is not extracted).
-# - Not followed by an alphanumeric (so "$900.00extra" yields nothing) nor by a
-#   separator plus a digit (so a token is never cut in the middle).
+# - Not followed by a separator plus a digit (so a token is never cut in the middle).
+#
+# Numbers preceded by a letter/underscore (as in "USD850.00" or "INV-001") or
+# followed by a letter (as in "$850.00USD") are still extracted but flagged as
+# unsupported below, so they fail closed instead of being silently ignored.
+# A hyphen sign preceded by a letter (as in "INV-001") is part of an identifier
+# and is skipped entirely.
 _NUMBER_RE = re.compile(
-    r"(?<![A-Za-z0-9_])"
-    r"(?<![A-Za-z_]-)"
+    r"(?<![0-9])"
     r"(?<![0-9][.,])"
     r"(?P<neg>-)?"
     r"\$?"
     r"(?P<token>[0-9]+(?:[.,][0-9]+)*)"
     r"%?"
-    r"(?![A-Za-z0-9])"
     r"(?![.,][0-9])"
 )
 
@@ -115,11 +121,26 @@ def check_text_numbers(texts: list[str], allowed: AllowedNumbers) -> TextNumberC
     unmatched: list[str] = []
 
     for text in texts:
-        for match in _NUMBER_RE.finditer(_normalize_text(text)):
+        normalized_text = _normalize_text(text)
+        for match in _NUMBER_RE.finditer(normalized_text):
             sign = match.group("neg") or ""
             token = match.group("token")
+            start, end = match.span()
 
-            if _SUPPORTED_TOKEN_RE.fullmatch(token) is None:
+            # A hyphen sign preceded by a letter/underscore is part of an
+            # identifier (e.g. "INV-001"), not a negative number. Skip it
+            # entirely so identifiers are not mistaken for amounts.
+            if sign and start > 0 and normalized_text[start - 1].isalpha():
+                continue
+
+            # A number preceded by a letter/underscore (as in "USD850.00" or
+            # "INV-001") or followed by a letter (as in "$850.00USD") is an
+            # unsupported alphanumeric token and must fail closed.
+            preceded_by_letter = start > 0 and normalized_text[start - 1].isalpha()
+            followed_by_letter = end < len(normalized_text) and normalized_text[end].isalpha()
+            adjacent_to_letter = preceded_by_letter or followed_by_letter
+
+            if _SUPPORTED_TOKEN_RE.fullmatch(token) is None or adjacent_to_letter:
                 numbers_in_text.append(f"{sign}{token}")
                 unmatched.append(f"{sign}{token}")
                 continue

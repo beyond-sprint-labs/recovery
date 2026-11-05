@@ -96,19 +96,22 @@ def test_identifier_numbers_are_ignored():
     assert result.numbers_in_text == ["900.00"]
 
 
-def test_numbers_inside_words_are_ignored():
-    result = check_text_numbers(["item2costs $900.00"], _allowed("900.00"))
+def test_digit_inside_word_is_extracted_as_unsupported():
+    allowed = _allowed("900.00")
+    result = check_text_numbers(["item2costs $900.00"], allowed)
 
-    assert result.status == "PASSED"
+    assert result.status == "FAILED"
+    assert result.numbers_in_text == ["2", "900.00"]
+    assert result.unmatched == ["2"]
+
+
+def test_number_attached_to_word_is_extracted_as_unsupported():
+    allowed = _allowed("900.00")
+    result = check_text_numbers(["$900.00extra"], allowed)
+
+    assert result.status == "FAILED"
     assert result.numbers_in_text == ["900.00"]
-
-
-def test_number_attached_to_word_is_not_extracted():
-    result = check_text_numbers(["$900.00extra"], _allowed("900.00"))
-
-    assert result.status == "PASSED"
-    assert result.numbers_in_text == []
-    assert result.unmatched == []
+    assert result.unmatched == ["900.00"]
 
 
 def test_empty_and_whitespace_strings_pass():
@@ -213,6 +216,42 @@ def test_ranges_and_dashes_are_not_read_as_negative_numbers():
 
     result = check_text_numbers(["Within 3-6 days"], allowed)
     assert result.numbers_in_text == ["3", "6"]
+
+
+def test_number_with_letter_suffix_is_unsupported():
+    allowed = _allowed("850.00")
+    result = check_text_numbers(["Pay $850.00USD today"], allowed)
+
+    assert result.status == "FAILED"
+    assert result.numbers_in_text == ["850.00"]
+    assert result.unmatched == ["850.00"]
+
+
+def test_number_with_letter_prefix_is_unsupported():
+    allowed = _allowed("850.00")
+    result = check_text_numbers(["Payment: USD850.00"], allowed)
+
+    assert result.status == "FAILED"
+    assert result.numbers_in_text == ["850.00"]
+    assert result.unmatched == ["850.00"]
+
+
+def test_scientific_notation_is_unsupported():
+    allowed = _allowed("1000.00")
+    result = check_text_numbers(["The payment is 1e3"], allowed)
+
+    assert result.status == "FAILED"
+    assert result.numbers_in_text == ["1", "3"]
+    assert result.unmatched == ["1", "3"]
+
+
+def test_invoice_identifier_with_decimal_is_not_extracted():
+    allowed = _allowed("850.00")
+    result = check_text_numbers(["Invoice INV-850.00"], allowed)
+
+    assert result.status == "PASSED"
+    assert result.numbers_in_text == []
+    assert result.unmatched == []
 
 
 # ---------------------------------------------------------------------------
