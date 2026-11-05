@@ -1,13 +1,38 @@
-"""Unit tests for F1-14: text-number output validator (text_guard)."""
+"""Unit tests for F1-14b: text-number output validator (text_guard)."""
 
+import contextlib
+import json
 from decimal import Decimal
+from pathlib import Path
 
-from app.services.input_sanitizer import SanitizedText, sanitize_customer_message
+import pytest
+
 from app.services.text_guard import AllowedNumbers, check_text_numbers
+
+SCENARIO_PATH = Path(__file__).resolve().parents[2] / "scenarios" / "text_mismatch.json"
 
 
 def _allowed(*values: str) -> AllowedNumbers:
-    return AllowedNumbers(values={Decimal(v) for v in values})
+    return AllowedNumbers(values=frozenset(Decimal(v) for v in values))
+
+
+def _collect_numbers(node: object) -> set[Decimal]:
+    """Collect every numeric string or integer found in a JSON-like structure."""
+    found: set[Decimal] = set()
+    if isinstance(node, dict):
+        for child in node.values():
+            found |= _collect_numbers(child)
+    elif isinstance(node, list):
+        for child in node:
+            found |= _collect_numbers(child)
+    elif isinstance(node, bool):
+        pass
+    elif isinstance(node, int):
+        found.add(Decimal(node))
+    elif isinstance(node, str):
+        with contextlib.suppress(ArithmeticError):
+            found.add(Decimal(node))
+    return found
 
 
 # ---------------------------------------------------------------------------
@@ -15,76 +40,79 @@ def _allowed(*values: str) -> AllowedNumbers:
 # ---------------------------------------------------------------------------
 
 
-def test_valid_text_only_permitted_numbers_passes():
+def test_valid_text_with_only_permitted_numbers_passes():
     allowed = _allowed("900.00", "300.00", "10", "3", "240.37", "240.36", "1021.10")
-    result = check_text_numbers(
-        ["Option A: pay $900.00 today (10% settlement discount)."],
-        allowed,
-    )
+
+    result = check_text_numbers(["Option A: pay $900.00 today (10% settlement discount)."], allowed)
 
     assert result.status == "PASSED"
     assert result.unmatched == []
-    assert "900.00" in result.numbers_in_text
-    assert "10" in result.numbers_in_text
+    assert result.numbers_in_text == ["900.00", "10"]
 
 
-def test_valid_text_with_multiple_inputs_passes():
+def test_multiple_texts_are_all_validated():
     allowed = _allowed("900.00", "300.00", "1021.10")
-    result = check_text_numbers(
-        ["Pay $900.00 today.", "Total is $1021.10."],
-        allowed,
-    )
+
+    result = check_text_numbers(["Pay $900.00 today.", "Total is $1021.10."], allowed)
 
     assert result.status == "PASSED"
+    assert result.numbers_in_text == ["900.00", "1021.10"]
     assert result.unmatched == []
 
 
-def test_equivalent_formatting_normalizes_correctly():
-    allowed = _allowed("1021.10")
-    result = check_text_numbers(["Total: $1,021.10"], allowed)
+def test_thousands_separator_is_normalized():
+    result = check_text_numbers(["Total: $1,021.10"], _allowed("1021.10"))
 
     assert result.status == "PASSED"
-    assert result.unmatched == []
-    assert "1021.10" in result.numbers_in_text
+    assert result.numbers_in_text == ["1021.10"]
 
 
-def test_currency_symbols_and_percentages():
-    allowed = _allowed("900.00", "10")
-    result = check_text_numbers(["Pay $900.00 today (10% discount)."], allowed)
+def test_equivalent_decimal_formatting_matches_by_value():
+    result = check_text_numbers(["Pay $900 today"], _allowed("900.00"))
 
     assert result.status == "PASSED"
+    assert result.numbers_in_text == ["900"]
     assert result.unmatched == []
+
+
+def test_currency_symbol_and_percentage_are_handled():
+    result = check_text_numbers(["Pay $900.00 today (10% discount)."], _allowed("900.00", "10"))
+
+    assert result.status == "PASSED"
+    assert result.numbers_in_text == ["900.00", "10"]
 
 
 def test_installment_counts_and_small_integers():
-    allowed = _allowed("3", "900.00")
-    result = check_text_numbers(["3 monthly installments of $900.00"], allowed)
+    result = check_text_numbers(["3 monthly installments of $900.00"], _allowed("3", "900.00"))
 
     assert result.status == "PASSED"
-    assert result.unmatched == []
+    assert result.numbers_in_text == ["3", "900.00"]
 
 
 def test_identifier_numbers_are_ignored():
-    allowed = _allowed("900.00")
-    result = check_text_numbers(["Invoice INV-001 for $900.00"], allowed)
+    result = check_text_numbers(["Invoice INV-001 for $900.00"], _allowed("900.00"))
 
     assert result.status == "PASSED"
-    assert result.unmatched == []
-    assert "001" not in result.numbers_in_text
+    assert result.numbers_in_text == ["900.00"]
 
 
 def test_numbers_inside_words_are_ignored():
-    allowed = _allowed("900.00")
-    result = check_text_numbers(["item2costs $900.00"], allowed)
+    result = check_text_numbers(["item2costs $900.00"], _allowed("900.00"))
 
     assert result.status == "PASSED"
+    assert result.numbers_in_text == ["900.00"]
+
+
+def test_number_attached_to_word_is_not_extracted():
+    result = check_text_numbers(["$900.00extra"], _allowed("900.00"))
+
+    assert result.status == "PASSED"
+    assert result.numbers_in_text == []
     assert result.unmatched == []
-    assert "2" not in result.numbers_in_text
 
 
-def test_empty_strings_pass():
-    allowed = _allowed("900.00")
-    result = check_text_numbers(["", "   "], allowed)
+def test_empty_and_whitespace_strings_pass():
+    result = check_text_numbers(["", "   "], _allowed("900.00"))
 
     assert result.status == "PASSED"
     assert result.numbers_in_text == []
@@ -92,8 +120,7 @@ def test_empty_strings_pass():
 
 
 def test_no_texts_passes():
-    allowed = _allowed("900.00")
-    result = check_text_numbers([], allowed)
+    result = check_text_numbers([], _allowed("900.00"))
 
     assert result.status == "PASSED"
     assert result.numbers_in_text == []
@@ -106,220 +133,183 @@ def test_no_texts_passes():
 
 
 def test_altered_financial_figure_fails():
-    allowed = _allowed("900.00", "300.00", "1021.10")
-    result = check_text_numbers(["Total is $850.00"], allowed)
+    result = check_text_numbers(["Total is $850.00"], _allowed("900.00", "300.00", "1021.10"))
 
     assert result.status == "FAILED"
-    assert "850.00" in result.unmatched
+    assert result.unmatched == ["850.00"]
 
 
 def test_invented_numeric_value_fails():
-    allowed = _allowed("900.00")
-    result = check_text_numbers(["The amount is $999999.99"], allowed)
+    result = check_text_numbers(["The amount is $999999.99"], _allowed("900.00"))
 
     assert result.status == "FAILED"
-    assert "999999.99" in result.unmatched
+    assert result.unmatched == ["999999.99"]
 
 
-def test_multiple_unmatched_values():
-    allowed = _allowed("900.00")
-    result = check_text_numbers(["$100.00 and $200.00"], allowed)
-
-    assert result.status == "FAILED"
-    assert "100.00" in result.unmatched
-    assert "200.00" in result.unmatched
-
-
-def test_decimal_precision_edge_cases():
-    allowed = _allowed("900.00")
-    result = check_text_numbers(["$900.001"], allowed)
+def test_multiple_unmatched_values_are_all_reported_in_order():
+    result = check_text_numbers(["$100.00 and $200.00"], _allowed("900.00"))
 
     assert result.status == "FAILED"
-    assert "900.001" in result.unmatched
+    assert result.unmatched == ["100.00", "200.00"]
 
 
-def test_negative_monetary_value_not_allowed():
-    allowed = _allowed("850.00")
-    result = check_text_numbers(["Total is $-850.00"], allowed)
-
-    assert result.status == "FAILED"
-    assert "-850.00" in result.unmatched
-
-
-def test_negative_small_decimal_not_allowed():
-    allowed = _allowed("0.50")
-    result = check_text_numbers(["Adjustment of -0.50"], allowed)
+def test_extra_decimal_precision_fails():
+    result = check_text_numbers(["$900.001"], _allowed("900.00"))
 
     assert result.status == "FAILED"
-    assert "-0.50" in result.unmatched
+    assert result.unmatched == ["900.001"]
 
 
-def test_positive_number_allowed():
-    allowed = _allowed("850.00")
-    result = check_text_numbers(["Total is $850.00"], allowed)
+def test_unmatched_is_reported_across_texts():
+    result = check_text_numbers(["Pay $900.00 today.", "Or $850.00 later."], _allowed("900.00"))
+
+    assert result.status == "FAILED"
+    assert result.numbers_in_text == ["900.00", "850.00"]
+    assert result.unmatched == ["850.00"]
+
+
+def test_negative_amount_is_extracted_with_its_sign_even_when_zero_is_allowed():
+    # Schedules contain "0.00" (n=0 interest), so zero is always an allowed value.
+    # "-850.00" must never be read as a permitted "00".
+    allowed = _allowed("900.00", "0.00")
+
+    for text in ("Discount of -850.00", "Refund -850.00 today", "-$850.00"):
+        result = check_text_numbers([text], allowed)
+
+        assert result.status == "FAILED"
+        assert result.numbers_in_text == ["-850.00"]
+        assert result.unmatched == ["-850.00"]
+
+
+def test_minus_sign_is_not_dropped_when_the_absolute_value_is_allowed():
+    result = check_text_numbers(["Discount of -900.00"], _allowed("900.00"))
+
+    assert result.status == "FAILED"
+    assert result.unmatched == ["-900.00"]
+
+
+def test_unicode_minus_sign_is_treated_as_a_minus():
+    result = check_text_numbers(["Refund \u2212850.00 today"], _allowed("850.00"))
+
+    assert result.status == "FAILED"
+    assert result.unmatched == ["-850.00"]
+
+
+def test_explicitly_allowed_negative_value_passes():
+    result = check_text_numbers(["Difference of -400.00"], _allowed("-400.00"))
 
     assert result.status == "PASSED"
-    assert result.unmatched == []
+    assert result.numbers_in_text == ["-400.00"]
 
 
-def test_zero_amount_allowed():
-    allowed = _allowed("0.00")
-    result = check_text_numbers(["Balance is 0.00"], allowed)
+def test_ranges_and_dashes_are_not_read_as_negative_numbers():
+    allowed = _allowed("900.00", "300.00", "3", "6")
 
-    assert result.status == "PASSED"
-    assert result.unmatched == []
+    for text in ("Within 3-6 days", "Pay $900.00 - $300.00 now"):
+        result = check_text_numbers([text], allowed)
 
+        assert result.status == "PASSED"
+        assert result.unmatched == []
 
-def test_negative_when_only_zero_authorized():
-    allowed = _allowed("0.00")
-    result = check_text_numbers(["Charge of -5.00 applied"], allowed)
-
-    assert result.status == "FAILED"
-    assert "-5.00" in result.unmatched
-
-
-def test_negative_with_thousands_separator_not_allowed():
-    allowed = _allowed("1021.10")
-    result = check_text_numbers(["Total is $-1,021.10"], allowed)
-
-    assert result.status == "FAILED"
-    assert "-1021.10" in result.unmatched
-
-
-def test_malformed_numeric_token_not_extracted():
-    allowed = _allowed("900.00")
-    result = check_text_numbers(["Value is --900 and $-$"], allowed)
-
-    assert result.status == "PASSED"
-    assert result.numbers_in_text == []
-    assert result.unmatched == []
-
-
-def test_european_comma_decimal_not_extracted():
-    allowed = _allowed("900.00")
-    result = check_text_numbers(["Amount is 900,00"], allowed)
-
-    assert result.status == "PASSED"
-    assert result.numbers_in_text == []
-    assert result.unmatched == []
-
-
-def test_invalid_thousands_separator_not_extracted():
-    allowed = _allowed("100.00")
-    result = check_text_numbers(["Value is 1,23"], allowed)
-
-    assert result.status == "PASSED"
-    assert result.numbers_in_text == []
-    assert result.unmatched == []
-
-
-def test_valid_thousands_separator_normalized():
-    allowed = _allowed("1021.10")
-    result = check_text_numbers(["Total: $1,021.10"], allowed)
-
-    assert result.status == "PASSED"
-    assert result.unmatched == []
-    assert "1021.10" in result.numbers_in_text
-
-
-def test_negative_thousands_separator_not_allowed():
-    allowed = _allowed("1021.10")
-    result = check_text_numbers(["Total is $-1,021.10"], allowed)
-
-    assert result.status == "FAILED"
-    assert "-1021.10" in result.unmatched
+    result = check_text_numbers(["Within 3-6 days"], allowed)
+    assert result.numbers_in_text == ["3", "6"]
 
 
 # ---------------------------------------------------------------------------
-# S11 scenario fixture test
+# Unsupported number formats fail closed (en-US only)
 # ---------------------------------------------------------------------------
 
 
-def test_s11_scenario_fixture_produces_text_number_mismatch():
-    """Validate the S11 scenario fixture produces TEXT_NUMBER_MISMATCH."""
-    import json
-    from pathlib import Path
+def test_unsupported_number_formats_fail_closed():
+    allowed = _allowed("0", "1", "2", "3", "5", "900.00", "1021.50", "1.5")
+    cases = {
+        "Pay 900,00 today": "900,00",
+        "Rate of 1,5 percent": "1,5",
+        "Total 1.021,50": "1.021,50",
+        "Options 1,2,3": "1,2,3",
+    }
 
-    fixture_path = (
-        Path(__file__).resolve().parent.parent.parent / "scenarios" / "text_mismatch.json"
+    for text, raw in cases.items():
+        result = check_text_numbers([text], allowed)
+
+        assert result.status == "FAILED"
+        assert result.numbers_in_text == [raw]
+        assert result.unmatched == [raw]
+
+
+def test_thousands_groups_of_three_are_supported():
+    result = check_text_numbers(["Balance of $1,000,000.50"], _allowed("1000000.50"))
+
+    assert result.status == "PASSED"
+    assert result.numbers_in_text == ["1000000.50"]
+
+
+def test_decimal_tail_of_a_rejected_identifier_is_not_extracted():
+    result = check_text_numbers(["Ref INV-12.00 for $900.00"], _allowed("900.00"))
+
+    assert result.status == "PASSED"
+    assert result.numbers_in_text == ["900.00"]
+
+
+# ---------------------------------------------------------------------------
+# Unicode digit normalization (ASCII-only extraction, DEC-25 / F1-14b)
+# ---------------------------------------------------------------------------
+
+
+def test_fullwidth_digits_are_normalized_before_extraction():
+    result = check_text_numbers(["Total is $\uff18\uff15\uff10.00"], _allowed("900.00"))
+
+    assert result.status == "FAILED"
+    assert result.numbers_in_text == ["850.00"]
+    assert result.unmatched == ["850.00"]
+
+
+def test_fullwidth_currency_and_percent_symbols_are_normalized():
+    result = check_text_numbers(
+        ["\uff04\uff19\uff10\uff10.00 with \uff11\uff10\uff05 off"],
+        _allowed("900.00", "10"),
     )
-    with fixture_path.open("r", encoding="utf-8") as f:
-        scenario = json.load(f)
 
-    assert scenario["scenario_id"] == "S11"
-    assert scenario["expected_status"] == "BLOCKED"
-    assert scenario["expected_rule_code"] == "TEXT_NUMBER_MISMATCH"
-
-    # Build allowed numbers from the engine result in the fixture
-    engine = scenario["engine_result"]
-    allowed_values: set[Decimal] = set()
-
-    for alt in engine["alternatives"]:
-        terms = alt["terms"]
-        if "discount_pct" in terms:
-            allowed_values.add(Decimal(terms["discount_pct"]))
-        if "down_payment_pct" in terms:
-            allowed_values.add(Decimal(terms["down_payment_pct"]))
-        if "installments" in terms:
-            allowed_values.add(Decimal(str(terms["installments"])))
-        if "periodic_rate_pct" in terms:
-            allowed_values.add(Decimal(terms["periodic_rate_pct"]))
-
-        if "computed" in alt:
-            for value in alt["computed"].values():
-                allowed_values.add(Decimal(value))
-
-        for key in (
-            "amount_due_now",
-            "installment_amount",
-            "total_paid",
-            "present_value",
-            "financing_cost",
-            "merchant_difference_vs_balance",
-        ):
-            if key in alt:
-                allowed_values.add(Decimal(alt[key]))
-
-        for item in alt.get("schedule", []):
-            for key in ("amount", "principal", "interest"):
-                if key in item:
-                    allowed_values.add(Decimal(item[key]))
-
-    allowed = AllowedNumbers(values=allowed_values)
-    result = check_text_numbers([scenario["generated_explanation"]], allowed)
-
-    expected = scenario["expected_text_number_check"]
-    assert result.status == expected["status"]
-    assert result.numbers_in_text == expected["numbers_in_text"]
-    assert result.unmatched == expected["unmatched"]
-    assert scenario["altered_number"] in result.unmatched
+    assert result.status == "PASSED"
+    assert result.numbers_in_text == ["900.00", "10"]
 
 
-def test_number_attached_to_word_is_not_extracted():
+def test_non_ascii_script_digits_are_mapped_to_ascii():
+    arabic_indic = "\u0668\u0665\u0660"
+    devanagari = "\u096e\u096b\u0966"
+
+    for digits in (arabic_indic, devanagari):
+        result = check_text_numbers([f"Total is {digits}"], _allowed("900.00"))
+
+        assert result.status == "FAILED"
+        assert result.numbers_in_text == ["850"]
+        assert result.unmatched == ["850"]
+
+
+def test_permitted_figure_written_in_non_ascii_digits_passes():
+    result = check_text_numbers(["Pay $\uff19\uff10\uff10.00 today"], _allowed("900.00"))
+
+    assert result.status == "PASSED"
+    assert result.numbers_in_text == ["900.00"]
+
+
+# ---------------------------------------------------------------------------
+# AllowedNumbers
+# ---------------------------------------------------------------------------
+
+
+def test_allowed_numbers_accepts_a_plain_set_and_stores_a_frozenset():
+    allowed = AllowedNumbers(values={Decimal("900.00")})  # type: ignore[arg-type]
+
+    assert isinstance(allowed.values, frozenset)
+    assert Decimal("900.00") in allowed.values
+
+
+def test_allowed_numbers_is_immutable():
     allowed = _allowed("900.00")
-    result = check_text_numbers(["$900.00extra"], allowed)
 
-    assert result.status == "PASSED"
-    assert result.numbers_in_text == []
-    assert result.unmatched == []
-
-
-# ---------------------------------------------------------------------------
-# Integration with sanitizer
-# ---------------------------------------------------------------------------
-
-
-def test_sanitized_text_then_validate_numbers():
-    """Verify text_guard works with sanitized input pipeline."""
-    raw = "Option A: pay $900.00 today (10% settlement discount)."
-    sanitized = sanitize_customer_message(raw)
-    assert isinstance(sanitized, SanitizedText)
-
-    allowed = _allowed("900.00", "10")
-    result = check_text_numbers([sanitized.text], allowed)
-
-    assert result.status == "PASSED"
-    assert result.unmatched == []
+    with pytest.raises(AttributeError):
+        allowed.values = frozenset()  # type: ignore[misc]
 
 
 # ---------------------------------------------------------------------------
@@ -327,14 +317,28 @@ def test_sanitized_text_then_validate_numbers():
 # ---------------------------------------------------------------------------
 
 
-def test_deterministic_results():
+def test_results_are_deterministic():
     allowed = _allowed("900.00", "10", "3")
     texts = ["Pay $900.00 today (10% discount), 3 installments."]
 
-    first = check_text_numbers(texts, allowed)
-    second = check_text_numbers(texts, allowed)
+    assert check_text_numbers(texts, allowed) == check_text_numbers(texts, allowed)
 
-    assert first == second
-    assert first.status == second.status
-    assert first.numbers_in_text == second.numbers_in_text
-    assert first.unmatched == second.unmatched
+
+# ---------------------------------------------------------------------------
+# Scenario S11: altered figure in AI-generated explanation (AC12)
+# ---------------------------------------------------------------------------
+
+
+def test_scenario_s11_text_number_mismatch_is_detected():
+    scenario = json.loads(SCENARIO_PATH.read_text(encoding="utf-8"))
+    engine_numbers = _collect_numbers(scenario["engine_result"])
+    allowed = AllowedNumbers(values=frozenset(engine_numbers))
+
+    result = check_text_numbers([scenario["generated_explanation"]], allowed)
+
+    expected = scenario["expected_text_number_check"]
+    assert scenario["expected_rule_code"] == "TEXT_NUMBER_MISMATCH"
+    assert result.status == expected["status"]
+    assert result.numbers_in_text == expected["numbers_in_text"]
+    assert result.unmatched == expected["unmatched"]
+    assert scenario["altered_number"] in result.unmatched
