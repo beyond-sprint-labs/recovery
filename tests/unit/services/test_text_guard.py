@@ -254,6 +254,67 @@ def test_invoice_identifier_with_decimal_is_not_extracted():
     assert result.unmatched == []
 
 
+def test_letter_prefixed_negative_amount_is_unsupported():
+    allowed = _allowed("850.00")
+
+    for text in ("Refund-850.00", "USD-850.00", "Pay-$850.00"):
+        result = check_text_numbers([text], allowed)
+
+        assert result.status == "FAILED"
+        assert result.numbers_in_text == ["-850.00"]
+        assert result.unmatched == ["-850.00"]
+
+
+def test_negative_amount_after_label_is_detected():
+    allowed = _allowed("-850.00")
+
+    for text in ("Payment: -850.00", "Payment: -$850.00"):
+        result = check_text_numbers([text], allowed)
+
+        assert result.status == "PASSED"
+        assert result.numbers_in_text == ["-850.00"]
+        assert result.unmatched == []
+
+
+def test_invoice_identifier_requires_the_complete_inv_prefix():
+    allowed = _allowed("850.00")
+
+    for text in ("INVOICE-850.00", "MINV-850.00"):
+        result = check_text_numbers([text], allowed)
+
+        assert result.status == "FAILED"
+        assert result.numbers_in_text == ["-850.00"]
+        assert result.unmatched == ["-850.00"]
+
+
+def test_malformed_invoice_identifier_tokens_fail_closed():
+    allowed = _allowed("850.00")
+
+    cases = {
+        "Invoice INV-850.00.99": ["-850.00.99"],
+        "Invoice INV-850.00extra": ["-850.00"],
+        "Invoice MINV-850.00": ["-850.00"],
+    }
+
+    for text, expected in cases.items():
+        result = check_text_numbers([text], allowed)
+
+        assert result.status == "FAILED"
+        assert result.numbers_in_text == expected
+        assert result.unmatched == expected
+
+
+def test_unicode_letter_suffix_is_not_a_valid_invoice_identifier():
+    allowed = _allowed("850.00")
+
+    for suffix in ("\u00f1", "\u00e9", "\u03a9"):
+        result = check_text_numbers([f"Invoice INV-850.00{suffix}"], allowed)
+
+        assert result.status == "FAILED"
+        assert result.numbers_in_text == ["-850.00"]
+        assert result.unmatched == ["-850.00"]
+
+
 # ---------------------------------------------------------------------------
 # Unsupported number formats fail closed (en-US only)
 # ---------------------------------------------------------------------------

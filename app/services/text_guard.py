@@ -48,8 +48,9 @@ __all__ = ["AllowedNumbers", "check_text_numbers"]
 # Numbers preceded by a letter/underscore (as in "USD850.00" or "INV-001") or
 # followed by a letter (as in "$850.00USD") are still extracted but flagged as
 # unsupported below, so they fail closed instead of being silently ignored.
-# A hyphen sign preceded by a letter (as in "INV-001") is part of an identifier
-# and is skipped entirely.
+# The only exemption is a complete invoice identifier matching
+# ``_INVOICE_ID_RE`` (see below); every other letter-prefixed negative token,
+# such as "Refund-850.00", remains unsupported.
 _NUMBER_RE = re.compile(
     r"(?<![0-9])"
     r"(?<![0-9][.,])"
@@ -62,6 +63,16 @@ _NUMBER_RE = re.compile(
 
 # A token is supported only if it follows the en-US grammar described above.
 _SUPPORTED_TOKEN_RE = re.compile(r"(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]+)?")
+
+# Supported invoice identifier: a standalone ``INV-<digits>`` token, optionally
+# with a decimal suffix (``INV-001``, ``INV-850.00``). The leading word boundary
+# prevents prefixes such as ``MINV-001`` or ``INVOICE-001`` from being treated
+# as identifiers. The trailing guard rejects any following word character
+# (including Unicode letters) or a dot followed by a digit, so partial matches of
+# malformed tokens such as ``INV-850.00.99``, ``INV-850.00extra`` or
+# ``INV-850.00\u00f1`` fail closed. A trailing sentence period is still allowed
+# because it is not a word character and is not followed by a digit.
+_INVOICE_ID_RE = re.compile(r"\bINV-[0-9]+(?:\.[0-9]+)?(?!\w|\.[0-9])")
 
 _UNICODE_MINUS = "\u2212"
 
@@ -122,15 +133,23 @@ def check_text_numbers(texts: list[str], allowed: AllowedNumbers) -> TextNumberC
 
     for text in texts:
         normalized_text = _normalize_text(text)
+        invoice_identifier_spans = [
+            identifier.span() for identifier in _INVOICE_ID_RE.finditer(normalized_text)
+        ]
         for match in _NUMBER_RE.finditer(normalized_text):
             sign = match.group("neg") or ""
             token = match.group("token")
             start, end = match.span()
 
-            # A hyphen sign preceded by a letter/underscore is part of an
-            # identifier (e.g. "INV-001"), not a negative number. Skip it
-            # entirely so identifiers are not mistaken for amounts.
-            if sign and start > 0 and normalized_text[start - 1].isalpha():
+            # Skip only a complete supported invoice identifier (e.g. "INV-001"
+            # or "INV-850.00"). Other letter-prefixed negative tokens such as
+            # "Refund-850.00", "USD-850.00" and "Pay-$850.00" fall through to
+            # the adjacency check below and fail closed.
+            in_invoice_identifier = any(
+                identifier_start <= start < identifier_end
+                for identifier_start, identifier_end in invoice_identifier_spans
+            )
+            if sign and in_invoice_identifier:
                 continue
 
             # A number preceded by a letter/underscore (as in "USD850.00" or
