@@ -1,4 +1,4 @@
-"""LLM client contract for Recovery F1-06."""
+"""LLM client contracts for Recovery F1-06."""
 
 from typing import Protocol, TypeVar
 
@@ -17,4 +17,16 @@ class LLMClient(Protocol):
         schema: type[ResponseT],
     ) -> ResponseT:
         """Return a response validated against the schema."""
+        ...
+
+
+class TextLLMClient(Protocol):
+    """Interface for generating untrusted text drafts."""
+
+    def generate_text(
+        self,
+        system: str,
+        user: str,
+    ) -> str:
+        """Generate text requiring backend validation."""
         ...
