@@ -1,0 +1,5 @@
+[
+  {"id": "CUS-001", "name": "Northwind Demo LLC", "email": "northwind@example.com"},
+  {"id": "CUS-002", "name": "Contoso Demo Studio", "email": "contoso@example.com"},
+  {"id": "CUS-003", "name": "Fabrikam Demo Services", "email": "fabrikam@example.com"}
+]

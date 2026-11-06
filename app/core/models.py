@@ -1,16 +1,41 @@
 """ORM models shared across the application.
 
-Only the audit trail lives here for now (F1-16). The remaining tables (invoices, proposals,
-webhook_events) are added by their owners as additive declarations on the same ``Base``.
+Customers and invoices (F1-08) and the audit trail (F1-16) share one ``Base``.
+Proposal and webhook tables are added by their owners as additive declarations.
 """
 
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
+
+
+class CustomerRow(Base):
+    """Fictional demo customers; email stays server-side."""
+
+    __tablename__ = "customers"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[str] = mapped_column(String(254), nullable=False)
+
+
+class InvoiceRow(Base):
+    """Merchant invoices; customer_id links to the recipient's email."""
+
+    __tablename__ = "invoices"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    customer_id: Mapped[str | None] = mapped_column(ForeignKey("customers.id"), nullable=True)
+    customer_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
+    balance: Mapped[str] = mapped_column(String(32), nullable=False)
+    due_date: Mapped[str] = mapped_column(String(10), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    paypal_invoice_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class AuditEventRow(Base):
