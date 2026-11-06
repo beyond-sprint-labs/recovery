@@ -1,0 +1,41 @@
+{
+  "scenario_id": "S11",
+  "name": "text_number_mismatch",
+  "description": "AI-generated explanation contains an altered financial figure",
+  "customer_message": "Can I pay $900 today?",
+  "engine_result": {
+    "engine_version": "1.0.0",
+    "alternatives": [
+      {
+        "type": "down_payment_installments",
+        "terms": {
+          "down_payment_pct": "30",
+          "installments": 3,
+          "periodic_rate_pct": "1.5"
+        },
+        "amount_due_now": "300.00",
+        "installment_amount": "240.37",
+        "total_paid": "1021.10",
+        "present_value": "1006.91",
+        "financing_cost": "21.10",
+        "merchant_difference_vs_balance": "6.91",
+        "policy_ok": true,
+        "schedule": [
+          { "n": 0, "due_date": "2026-11-11", "amount": "300.00", "principal": "300.00", "interest": "0.00" },
+          { "n": 1, "due_date": "2026-12-11", "amount": "240.37", "principal": "229.87", "interest": "10.50" },
+          { "n": 2, "due_date": "2027-01-11", "amount": "240.37", "principal": "233.32", "interest": "7.05" },
+          { "n": 3, "due_date": "2027-02-11", "amount": "240.36", "principal": "236.81", "interest": "3.55" }
+        ]
+      }
+    ]
+  },
+  "generated_explanation": "You can pay $300.00 now plus 3 monthly installments of $850.00, for a total of $1021.10.",
+  "altered_number": "850.00",
+  "expected_status": "BLOCKED",
+  "expected_rule_code": "TEXT_NUMBER_MISMATCH",
+  "expected_text_number_check": {
+    "status": "FAILED",
+    "numbers_in_text": ["300.00", "3", "850.00", "1021.10"],
+    "unmatched": ["850.00"]
+  }
+}
