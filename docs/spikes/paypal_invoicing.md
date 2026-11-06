@@ -26,7 +26,7 @@ All operations were executed against Sandbox accounts using Postman to verify HT
 | 2 | Deduplication Check | `POST /v2/invoicing/invoices` | **422 Unprocessable** | 820 ms | `DUPLICATE_INVOICE_NUMBER` (`debug_id: f151839b11c4d`) |
 | 3 | Send Invoice A | `POST /v2/invoicing/invoices/{id}/send` | **200 OK** | 1.34 s | Invoice `#INV2-2PCM-NCBE-AL76-RWMN` moved to sent |
 | 4 | Create Draft B | `POST /v2/invoicing/invoices` | **201 Created** | 825 ms | Replacement draft issued (`INV2-NBPL-EWU4-NB3J-BPQ5`) |
-| 5 | Cancel Original A | `POST /v2/invoicing/invoices/{id}/cancel` | **204 No Content** | 8.86 ms | Original invoice cancelled with recipient notification |
+| 5 | Cancel Original A | `POST /v2/invoicing/invoices/{id}/cancel` | **204 No Content** | 886 ms | Original invoice cancelled with recipient notification |
 | 6 | Send Invoice B | `POST /v2/invoicing/invoices/{id}/send` | **200 OK** | 903 ms | Replacement invoice sent to customer |
 | 7 | Rollback Test (Draft C) | `DELETE /v2/invoicing/invoices/{id}` | **204 No Content** | 871 ms | Draft `INV2-6973-AWM6-YBNF-P2LZ` purged from storage |
 | 8 | Record Payment (Shortcut) | `POST /v2/invoicing/invoices/{id}/payments` | **200 OK** | 1.78 s | Payment recorded (`payment_id: EXTR-67910647YM891240V`) |
@@ -85,6 +85,7 @@ PayPal Invoicing API v2 does not return an idempotent replay when an invoice num
 * **Endpoint:** `POST /v2/invoicing/invoices/INV2-2PCM-NCBE-AL76-RWMN/send`
 * **Payload:** `{"send_to_invoicer": true}`
 * **Response:** HTTP `200 OK` (1.34 s)
+* **Status Verification Note:** After executing `/send`, an immediate `GET /v2/invoicing/invoices/{id}` returns a status of **`SENT`**. The `UNPAID` status is only observed later in the payment lifecycle (or when viewed from the recipient's perspective). The `ExecutionService` preflight logic must explicitly check for `SENT` to confirm the invoice was dispatched.
 
 ### 4.2. Cancelling Original Invoice A
 * **Endpoint:** `POST /v2/invoicing/invoices/INV2-2PCM-NCBE-AL76-RWMN/cancel`
@@ -125,7 +126,7 @@ PayPal Invoicing API v2 does not return an idempotent replay when an invoice num
 }
 ```
 * **Strict Contract Rule:** The payment field is strictly named `"method"`. Submitting `"payment_method"` results in HTTP `400 BAD_REQUEST`.
-* **Response:** HTTP `200 OK` (578 ms) with `payment_id: "EXTR-67910647YM891240V"`.
+* **Response:** HTTP `200 OK` (1.78 s) with `payment_id: "EXTR-67910647YM891240V"`.
 * **Webhook Confirmation:** Recording a payment via this endpoint triggers an authentic `INVOICING.INVOICE.PAID` asynchronous event dispatched by PayPal Sandbox.
 
 ---
