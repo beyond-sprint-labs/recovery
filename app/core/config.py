@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     paypal_client_id: str = ""
     paypal_client_secret: SecretStr = SecretStr("")
     paypal_webhook_id: str = ""
+    paypal_merchant_email: EmailStr | None = None
     paypal_sandbox_buyer_email: EmailStr | None = None
 
     # --- merchant policy (server-side only, never accepted from request) ---

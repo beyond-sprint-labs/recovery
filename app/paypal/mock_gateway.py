@@ -13,17 +13,20 @@ MONEY_ADAPTER = TypeAdapter(Money)
 
 
 class MockPayPalGateway(PayPalGateway):
-    def __init__(self):
+    """In-memory gateway. Statuses and error codes mirror PayPal Invoicing v2 (spike F1-03)."""
+
+    def __init__(self) -> None:
         self.invoices_db: dict[str, dict[str, Any]] = {}
         self.fail_steps: set[str] = set()
 
-    def _check_failure(self, step: str):
+    def _check_failure(self, step: str) -> None:
         if step in self.fail_steps:
             self.fail_steps.remove(step)
             raise PayPalError("SIMULATED_FAILURE", f"Forced failure at step '{step}'")
 
-    def create_draft(self, req: NewInvoiceReq) -> PayPalInvoiceRef:
+    def create_draft(self, req: NewInvoiceReq, request_id: str) -> PayPalInvoiceRef:
         self._check_failure("create")
+        # Like real PayPal, creation is not replay-safe: duplicates are rejected by number.
         for inv in self.invoices_db.values():
             if inv["req"].invoice_number == req.invoice_number:
                 raise PayPalError(
@@ -35,6 +38,7 @@ class MockPayPalGateway(PayPalGateway):
             "id": mock_id,
             "status": "DRAFT",
             "req": req,
+            "request_id": request_id,
             "paid_amount": Decimal("0.00"),
         }
         return PayPalInvoiceRef(id=mock_id, status="DRAFT")
@@ -42,11 +46,13 @@ class MockPayPalGateway(PayPalGateway):
     def cancel_invoice(self, paypal_invoice_id: str) -> None:
         self._check_failure("cancel")
         invoice = self._get_or_fail(paypal_invoice_id)
-        if invoice["status"] in ["PAID", "CANCELLED"]:
+        if invoice["status"] in {"PAID", "PARTIALLY_PAID"}:
             raise PayPalError(
-                "INVALID_STATE",
-                f"Cannot cancel invoice in status {invoice['status']}",
+                "CANNOT_CANCEL_PAID_INVOICE",
+                "Invoices with payments cannot be cancelled",
             )
+        if invoice["status"] == "CANCELLED":
+            raise PayPalError("INVALID_STATE", "Invoice is already cancelled")
         invoice["status"] = "CANCELLED"
 
     def send_invoice(self, paypal_invoice_id: str) -> PayPalInvoiceRef:
@@ -57,8 +63,8 @@ class MockPayPalGateway(PayPalGateway):
                 "INVALID_STATE",
                 f"Can only send DRAFT invoices. Current: {invoice['status']}",
             )
-        invoice["status"] = "UNPAID"
-        return PayPalInvoiceRef(id=paypal_invoice_id, status="UNPAID")
+        invoice["status"] = "SENT"
+        return PayPalInvoiceRef(id=paypal_invoice_id, status="SENT")
 
     def delete_draft(self, paypal_invoice_id: str) -> None:
         self._check_failure("delete")
@@ -69,17 +75,19 @@ class MockPayPalGateway(PayPalGateway):
 
     def get_invoice(self, paypal_invoice_id: str) -> PayPalInvoiceState:
         invoice = self._get_or_fail(paypal_invoice_id)
+        paid: Decimal = invoice["paid_amount"]
         return PayPalInvoiceState(
             id=invoice["id"],
             status=invoice["status"],
-            amount_due=str(Decimal(invoice["req"].amount) - invoice["paid_amount"]),
+            amount_due=str(Decimal(invoice["req"].amount) - paid),
             total_amount=invoice["req"].amount,
+            paid_amount=str(paid) if paid > Decimal("0.00") else None,
         )
 
     def record_payment(self, paypal_invoice_id: str, amount: str) -> None:
         invoice = self._get_or_fail(paypal_invoice_id)
 
-        if invoice["status"] not in ["UNPAID", "PARTIALLY_PAID"]:
+        if invoice["status"] not in ["SENT", "PARTIALLY_PAID"]:
             raise PayPalError(
                 "INVALID_STATE",
                 f"Cannot record payment for invoice in status {invoice['status']}",
@@ -107,7 +115,7 @@ class MockPayPalGateway(PayPalGateway):
         invoice["paid_amount"] = new_paid
         invoice["status"] = "PAID" if new_paid == total else "PARTIALLY_PAID"
 
-    def _get_or_fail(self, paypal_invoice_id: str) -> dict:
+    def _get_or_fail(self, paypal_invoice_id: str) -> dict[str, Any]:
         if paypal_invoice_id not in self.invoices_db:
             raise PayPalError("NOT_FOUND", f"Invoice {paypal_invoice_id} not found")
         return self.invoices_db[paypal_invoice_id]
