@@ -2,6 +2,8 @@
 
 import contextlib
 import json
+import unicodedata
+from collections.abc import Iterator
 from decimal import Decimal
 from pathlib import Path
 
@@ -10,10 +12,14 @@ import pytest
 from app.services.text_guard import AllowedNumbers, check_text_numbers
 
 SCENARIO_PATH = Path(__file__).resolve().parents[2] / "scenarios" / "text_mismatch.json"
+INVOICE_IDS = ("INV-001", "INV-0042")
 
 
-def _allowed(*values: str) -> AllowedNumbers:
-    return AllowedNumbers(values=frozenset(Decimal(v) for v in values))
+def _allowed(*values: str, invoice_ids: tuple[str, ...] = ()) -> AllowedNumbers:
+    return AllowedNumbers(
+        values=frozenset(Decimal(v) for v in values),
+        invoice_ids=frozenset(invoice_ids),
+    )
 
 
 def _collect_numbers(node: object) -> set[Decimal]:
@@ -90,7 +96,9 @@ def test_installment_counts_and_small_integers():
 
 
 def test_identifier_numbers_are_ignored():
-    result = check_text_numbers(["Invoice INV-001 for $900.00"], _allowed("900.00"))
+    allowed = _allowed("900.00", invoice_ids=("INV-001",))
+
+    result = check_text_numbers(["Invoice INV-001 for $900.00"], allowed)
 
     assert result.status == "PASSED"
     assert result.numbers_in_text == ["900.00"]
@@ -245,13 +253,14 @@ def test_scientific_notation_is_unsupported():
     assert result.unmatched == ["1", "3"]
 
 
-def test_invoice_identifier_with_decimal_is_not_extracted():
-    allowed = _allowed("850.00")
+def test_invoice_identifier_with_decimal_tail_fails_closed():
+    allowed = _allowed("850.00", "0.00", invoice_ids=("INV-001",))
+
     result = check_text_numbers(["Invoice INV-850.00"], allowed)
 
-    assert result.status == "PASSED"
-    assert result.numbers_in_text == []
-    assert result.unmatched == []
+    assert result.status == "FAILED"
+    assert result.numbers_in_text == ["-850.00"]
+    assert result.unmatched == ["-850.00"]
 
 
 def test_letter_prefixed_negative_amount_is_unsupported():
@@ -344,11 +353,14 @@ def test_thousands_groups_of_three_are_supported():
     assert result.numbers_in_text == ["1000000.50"]
 
 
-def test_decimal_tail_of_a_rejected_identifier_is_not_extracted():
-    result = check_text_numbers(["Ref INV-12.00 for $900.00"], _allowed("900.00"))
+def test_decimal_tail_of_a_non_identifier_is_not_hidden():
+    allowed = _allowed("900.00", invoice_ids=("INV-001",))
 
-    assert result.status == "PASSED"
-    assert result.numbers_in_text == ["900.00"]
+    result = check_text_numbers(["Ref INV-12.00 for $900.00"], allowed)
+
+    assert result.status == "FAILED"
+    assert result.numbers_in_text == ["-12.00", "900.00"]
+    assert result.unmatched == ["-12.00"]
 
 
 # ---------------------------------------------------------------------------
@@ -412,6 +424,11 @@ def test_allowed_numbers_is_immutable():
         allowed.values = frozenset()  # type: ignore[misc]
 
 
+def test_blank_invoice_identifier_is_rejected():
+    with pytest.raises(ValueError, match="blank"):
+        AllowedNumbers(values=frozenset(), invoice_ids=frozenset({"  "}))
+
+
 # ---------------------------------------------------------------------------
 # Determinism
 # ---------------------------------------------------------------------------
@@ -422,6 +439,174 @@ def test_results_are_deterministic():
     texts = ["Pay $900.00 today (10% discount), 3 installments."]
 
     assert check_text_numbers(texts, allowed) == check_text_numbers(texts, allowed)
+
+
+# ---------------------------------------------------------------------------
+# Adversarial boundaries: default deny
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["Refund-850.00", "USD-850.00", "Pay-$850.00", "Pay-850.00 today"],
+)
+def test_negative_amount_glued_to_a_word_fails_closed(text):
+    # Fails closed even when 850.00 and -850.00 are both explicitly allowed.
+    result = check_text_numbers([text], _allowed("0.00", "850.00", "-850.00"))
+
+    assert result.status == "FAILED"
+    assert result.numbers_in_text == ["-850.00"]
+    assert result.unmatched == ["-850.00"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Invoice INV-$850.00",
+        "Invoice INV-850%",
+        "Invoice INV-850",
+        "Invoice INV-001extra",
+        "Invoice INV-001.50",
+    ],
+)
+def test_identifier_lookalikes_do_not_hide_figures(text):
+    allowed = _allowed("0.00", "1", "850", "850.00", invoice_ids=INVOICE_IDS)
+
+    result = check_text_numbers([text], allowed)
+
+    assert result.status == "FAILED"
+    assert result.unmatched
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Invoice INV-001 for $900.00",
+        "Invoice inv-001, total $900.00.",
+        "(INV-0042) is $900.00",
+    ],
+)
+def test_declared_invoice_identifiers_are_ignored_in_any_context(text):
+    result = check_text_numbers([text], _allowed("900.00", invoice_ids=INVOICE_IDS))
+
+    assert result.status == "PASSED"
+    assert result.numbers_in_text == ["900.00"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Invoice INV-850",
+        "Invoice INV-850.00",
+        "Invoice INV-850%",
+    ],
+)
+def test_identifier_shaped_figures_are_not_hidden(text):
+    result = check_text_numbers([text], _allowed("0.00", invoice_ids=("INV-001",)))
+
+    assert result.status == "FAILED"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Pay $3 240.37 now",
+        "Pay $3'240.37 now",
+        "Pay $3\u200b240.37 now",
+        "Refund \u2013240.37",
+    ],
+)
+def test_demo_figures_cannot_be_recombined_across_separators(text):
+    allowed = _allowed("0.00", "3", "240.37", "240.36", "1021.10", "300.00")
+
+    assert check_text_numbers([text], allowed).status == "FAILED"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Pay $1 021.10 today",  # space as thousands separator
+        "Pay 1 021.10 today",
+        "Pay $1\u00a0021.10 today",  # no-break space, folded to a space by NFKC
+        "Pay $1'021.10 today",  # Swiss apostrophe
+        "Pay $1\u2019021.10 today",  # typographic apostrophe
+        "Pay $1\u00b7021.10 today",  # middle dot
+        "Pay $10\u066b00 today",  # Arabic decimal separator
+        "Pay $85\u200b0.00 today",  # zero-width space inside the figure
+        "Pay $85\u202e0.00 today",  # bidi override inside the figure
+    ],
+)
+def test_digit_group_separators_fail_closed(text):
+    allowed = _allowed("0.00", "1", "10", "21.10", "85", "1021.10", "850.00")
+
+    assert check_text_numbers([text], allowed).status == "FAILED"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Pay \u20ac850.00 today",
+        "Pay 850.00\u20ac today",
+        "Pay \u00a3850.00 today",
+        "Pay 850.00\u00a5 today",
+        "Pay Rs.850.00 today",
+        "Pay .850 today",
+        "Pay 0x354 today",
+        "Pay 1_000 today",
+        "Pay \u00bd now",
+    ],
+)
+def test_foreign_symbols_and_odd_notations_fail_closed(text):
+    allowed = _allowed("0", "1", "2", "354", "850", "850.00", "1000")
+
+    assert check_text_numbers([text], allowed).status == "FAILED"
+
+
+@pytest.mark.parametrize("dash", ["\u2013", "\u2010", "\u2011", "\ufe63", "\uff0d"])
+def test_dash_variants_never_turn_a_negative_into_a_pass(dash):
+    result = check_text_numbers([f"Refund {dash}850.00 today"], _allowed("850.00", "0.00"))
+
+    assert result.status == "FAILED"
+
+
+def test_em_dash_and_curly_double_quotes_between_words_are_accepted():
+    allowed = _allowed("300.00", "900.00")
+
+    result = check_text_numbers(["Total\u2014$300.00 or \u201c$900.00\u201d"], allowed)
+
+    assert result.status == "PASSED"
+    assert result.numbers_in_text == ["300.00", "900.00"]
+
+
+# Characters that legitimately fold to a safe neighbour are excluded from the sweep:
+# ASCII punctuation allowed around figures, whitespace, and U+2212, which the module
+# maps to "-" on purpose.
+_SWEEP_SKIP = frozenset('$%-()[]{}":;,.!? \t\n\r\u2014\u2212')
+
+
+def _boundary_chars() -> Iterator[str]:
+    """Every BMP letter, mark, symbol or format char that cannot fold to a safe char."""
+    for codepoint in range(0x10000):
+        char = chr(codepoint)
+        category = unicodedata.category(char)
+        if category[0] not in {"L", "M", "S"} and category != "Cf":
+            continue
+        folded = unicodedata.normalize("NFKC", char)
+        if any(c in _SWEEP_SKIP or c.isspace() or unicodedata.category(c) == "Nd" for c in folded):
+            continue
+        yield char
+
+
+def test_no_letter_mark_symbol_or_format_char_can_touch_a_figure():
+    allowed = _allowed("850.00", "850", "0.00")
+    leaks = [
+        f"U+{ord(char):04X}"
+        for char in _boundary_chars()
+        for text in (f"Pay{char}850.00 today", f"Pay 850.00{char} today")
+        if check_text_numbers([text], allowed).status == "PASSED"
+    ]
+
+    assert leaks == []
 
 
 # ---------------------------------------------------------------------------
