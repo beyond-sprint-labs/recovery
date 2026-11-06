@@ -29,6 +29,11 @@ always one character short. A bare figure separated from a previous digit by
 whitespace (``1 021.10``) is also unsupported, because it can be read as one
 number but extracted as two.
 
+Joined figures: two figures glued together by punctuation with no space
+(``900.00-850.00``, ``$900.00-$850.00``, ``10%-20%``, ``900.00:850.00``) are
+ambiguous (range, subtraction, ratio) and fail closed. The single exception is
+an ordinary range of two plain integers joined by an ASCII hyphen (``3-6``).
+
 Invoice identifiers: only the identifiers listed in ``AllowedNumbers.invoice_ids``
 (for example ``INV-001``) are ignored. Any other ``INV-...`` text, including
 ``INV-850`` or ``INV-850.00``, is validated like any other number.
@@ -70,6 +75,10 @@ _NUMBER_RE = re.compile(
 
 # A token is supported only if it follows the en-US grammar described above.
 _SUPPORTED_TOKEN_RE = re.compile(r"(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]+)?")
+
+# "3-6": two plain integers (no sign, "$", "%", decimals or thousands separators)
+# joined by an ASCII hyphen. It is the only way two figures may touch.
+_PLAIN_INT_RANGE_RE = re.compile(r"(?<![0-9$%-])(?<![0-9][.,])[0-9]+-[0-9]+(?!%|[0-9]|[.,][0-9])")
 
 _UNICODE_MINUS = "\u2212"
 _ASCII_DIGITS = frozenset("0123456789")
@@ -134,7 +143,28 @@ def _invoice_id_pattern(invoice_ids: frozenset[str]) -> re.Pattern[str] | None:
     )
 
 
-def _is_unsupported(text: str, token: str, start: int, end: int) -> bool:
+def _joined_figures_ok(text: str, start: int, end: int, range_spans: list[tuple[int, int]]) -> bool:
+    """Reject a figure glued to another figure unless both form a plain-integer range."""
+    joined_right = (
+        end + 1 < len(text)
+        and text[end] not in _WHITESPACE
+        and (text[end + 1] in _ASCII_DIGITS or text[end + 1] == "$")
+    )
+    joined_left = (
+        start >= 2
+        and text[start - 1] not in _WHITESPACE
+        and (text[start - 2] in _ASCII_DIGITS or text[start - 2] == "%")
+    )
+    if not (joined_right or joined_left):
+        return True
+    if (joined_right and text[end] != "-") or (joined_left and text[start - 1] != "-"):
+        return False
+    return any(low <= start and end <= high for low, high in range_spans)
+
+
+def _is_unsupported(
+    text: str, token: str, start: int, end: int, range_spans: list[tuple[int, int]]
+) -> bool:
     """Return True when a candidate figure must fail closed."""
     if _SUPPORTED_TOKEN_RE.fullmatch(token) is None:
         return True
@@ -151,7 +181,9 @@ def _is_unsupported(text: str, token: str, start: int, end: int) -> bool:
         before = text[:start].rstrip(" \t\n\r")
         if before and before[-1] in _ASCII_DIGITS:
             return True
-    return False
+
+    # "900.00-850.00": figures glued together are ambiguous.
+    return not _joined_figures_ok(text, start, end, range_spans)
 
 
 def check_text_numbers(texts: list[str], allowed: AllowedNumbers) -> TextNumberCheck:
@@ -179,6 +211,7 @@ def check_text_numbers(texts: list[str], allowed: AllowedNumbers) -> TextNumberC
         if invoice_ids_re is not None:
             # A space keeps neighbouring tokens separated after the removal.
             normalized_text = invoice_ids_re.sub(" ", normalized_text)
+        range_spans = [m.span() for m in _PLAIN_INT_RANGE_RE.finditer(normalized_text)]
 
         for match in _NUMBER_RE.finditer(normalized_text):
             sign = match.group("neg") or ""
@@ -186,7 +219,7 @@ def check_text_numbers(texts: list[str], allowed: AllowedNumbers) -> TextNumberC
             start, end = match.span()
             raw = f"{sign}{token}"
 
-            if _is_unsupported(normalized_text, token, start, end):
+            if _is_unsupported(normalized_text, token, start, end, range_spans):
                 numbers_in_text.append(raw)
                 unmatched.append(raw)
                 continue

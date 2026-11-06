@@ -627,3 +627,54 @@ def test_scenario_s11_text_number_mismatch_is_detected():
     assert result.numbers_in_text == expected["numbers_in_text"]
     assert result.unmatched == expected["unmatched"]
     assert scenario["altered_number"] in result.unmatched
+
+
+# ---------------------------------------------------------------------------
+# Joined figures and plain integer ranges (Oscar's regression: Pay 900.00-850.00)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Pay 900.00-850.00",
+        "Pay $900.00-$850.00",
+        "Pay $900.00-850.00",
+        "Pay 900.00-$850.00",
+        "Pay 10%-20% off",
+        "Pay 1,000-850 now",
+        "Pay 900.00\u2014850.00",
+        "Pay 900.00:850.00",
+        "Pay $900.00;$850.00",
+        "Pay $900.00,$850.00",
+    ],
+)
+def test_figures_joined_by_punctuation_fail_closed(text):
+    # Both figures are allowed: the failure must come from the ambiguous join itself.
+    allowed = _allowed("0.00", "10", "20", "850", "850.00", "900.00", "1000")
+
+    assert check_text_numbers([text], allowed).status == "FAILED"
+
+
+def test_hyphenated_decimal_figures_report_both_amounts():
+    result = check_text_numbers(["Pay 900.00-850.00"], _allowed("900.00", "850.00"))
+
+    assert result.status == "FAILED"
+    assert result.numbers_in_text == ["900.00", "850.00"]
+    assert result.unmatched == ["900.00", "850.00"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Within 3-6 days",
+        "Within (3-6) days",
+        "Within 3-6, days",
+        "Between 10-12 days",
+    ],
+)
+def test_plain_integer_ranges_are_still_supported(text):
+    result = check_text_numbers([text], _allowed("3", "6", "10", "12"))
+
+    assert result.status == "PASSED"
+    assert result.unmatched == []
