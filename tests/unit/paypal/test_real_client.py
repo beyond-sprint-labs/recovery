@@ -207,20 +207,21 @@ def test_auth_failure_does_not_leak_secrets(gateway):
 
 
 @respx.mock
-def test_server_error_keeps_debug_id(gateway):
+def test_server_error_5xx_is_outcome_unknown(gateway):
     token_route()
-    respx.get(f"{INVOICES_URL}/INV2-1").mock(
+    respx.post(f"{INVOICES_URL}/INV2-1/cancel").mock(
         return_value=Response(
             503,
-            json={"name": "SERVICE_UNAVAILABLE", "message": "Down.", "debug_id": "abc123"},
+            json={"name": "SERVICE_UNAVAILABLE", "message": "PayPal is down", "debug_id": "abc123"},
         )
     )
 
     with pytest.raises(PayPalError) as exc:
-        gateway.get_invoice("INV2-1")
+        gateway.cancel_invoice("INV2-1")
 
     assert exc.value.code == "PAYPAL_HTTP_503"
-    assert "debug_id=abc123" in exc.value.message
+    # Critical: a 503 on a mutation means the outcome is unknown
+    assert exc.value.outcome_unknown is True
 
 
 @respx.mock

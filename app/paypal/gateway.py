@@ -6,9 +6,18 @@ from pydantic import BaseModel, ConfigDict, EmailStr, StringConstraints
 
 from app.core.schemas import Money
 
-# Error codes raised once the request may already have reached PayPal. After one of these the
-# outcome of a mutation is unknown, so callers must re-read the invoice before deciding.
-OUTCOME_UNKNOWN_CODES: frozenset[str] = frozenset({"TIMEOUT", "NETWORK_ERROR"})
+# Error codes raised once the request may already have reached PayPal.
+# Includes 5xx server errors because PayPal might have processed the mutation before failing.
+OUTCOME_UNKNOWN_CODES: frozenset[str] = frozenset(
+    {
+        "TIMEOUT",
+        "NETWORK_ERROR",
+        "PAYPAL_HTTP_500",
+        "PAYPAL_HTTP_502",
+        "PAYPAL_HTTP_503",
+        "PAYPAL_HTTP_504",
+    }
+)
 
 
 class PayPalError(Exception):
