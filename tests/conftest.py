@@ -5,9 +5,11 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
+from app.core import models as _models  # noqa: F401  (registers tables on Base)
 from app.core.config import get_settings
-from app.core.db import get_engine, get_session_factory
+from app.core.db import Base, get_engine, get_session_factory
 
 TEST_ORIGIN = "http://localhost:5173"
 
@@ -44,3 +46,11 @@ def client() -> Iterator[TestClient]:
 
     with TestClient(create_app()) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def db_session() -> Iterator[Session]:
+    """Session bound to the isolated test database with every table created."""
+    Base.metadata.create_all(get_engine())
+    with get_session_factory()() as session:
+        yield session
