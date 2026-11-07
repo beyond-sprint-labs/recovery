@@ -4,7 +4,8 @@
 fictional customers and USD invoices for local integration tests and E2E setup.
 Customer IDs link the files. Everything is validated before any row is inserted:
 
-- IDs match `AAA-000` (ASCII `A-Z` and `0-9` only); lookalike or invisible Unicode is rejected.
+- IDs use three ASCII uppercase letters, a hyphen and 3–9 ASCII digits
+  (`[A-Z]{3}-[0-9]{3,9}`); lookalike or invisible Unicode is rejected.
 - Names are NFKC-normalized, single-spaced and free of control or format characters.
 - Emails are ASCII addresses on exactly `example.com` or `example.org`.
 - Money uses strings with exactly two decimal places; dates use ISO `YYYY-MM-DD`.
@@ -70,8 +71,3 @@ pending steps are `xfail(strict=True)` until their cards land (see `tests/integr
 
 This task supplies data and persistence setup. Invoice HTTP endpoints, proposal lifecycle
 behavior and execution remain the responsibility of their service tasks.
-
-
-Existing databases created with the earlier nullable customer_id column require a
-schema migration or a fresh disposable demo database. create_all does not alter
-existing tables. Preserve any database whose runtime data you need.
