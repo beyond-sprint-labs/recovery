@@ -29,7 +29,7 @@ class InvoiceRow(Base):
     __tablename__ = "invoices"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    customer_id: Mapped[str | None] = mapped_column(ForeignKey("customers.id"), nullable=True)
+    customer_id: Mapped[str] = mapped_column(ForeignKey("customers.id"), nullable=False)
     customer_name: Mapped[str] = mapped_column(String(255), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
     balance: Mapped[str] = mapped_column(String(32), nullable=False)

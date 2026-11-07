@@ -2,9 +2,14 @@
 
 `app/seed/customers.json` and `app/seed/invoices.json` are JSON arrays. They contain
 fictional customers and USD invoices for local integration tests and E2E setup.
-Customer IDs link the files. Money uses strings with exactly two decimal places;
-dates use ISO `YYYY-MM-DD`; unknown fields, invalid emails, duplicate IDs and
-broken customer references are rejected before insertion.
+Customer IDs link the files. Everything is validated before any row is inserted:
+
+- IDs match `AAA-000` (ASCII `A-Z` and `0-9` only); lookalike or invisible Unicode is rejected.
+- Names are NFKC-normalized, single-spaced and free of control or format characters.
+- Emails are ASCII addresses on exactly `example.com` or `example.org`.
+- Money uses strings with exactly two decimal places; dates use ISO `YYYY-MM-DD`.
+- `paypal_invoice_id` must be `null`; unknown fields, duplicate IDs and broken customer
+  references are rejected.
 
 ## Load a local database
 
@@ -18,8 +23,8 @@ The command uses `DATABASE_URL` from the existing settings (`.env` or environmen
 creates missing tables and commits all inserts in one transaction. It refuses
 `APP_ENV=production`. It prints inserted counts and makes no network requests.
 Running it again inserts only missing IDs; existing invoice balances, statuses and
-PayPal references are preserved. A conflicting existing customer identity aborts
-the transaction. Startup does not automatically seed a database.
+PayPal references are preserved. A conflicting existing identity aborts the transaction: a customer with a different name or
+email, or an invoice with a different customer, customer name, currency or due date.
 
 Tests can call `load_seed_data()` for validated fixtures or
 `seed_database(session)` inside a transaction owned by the test/service. Do not
@@ -41,8 +46,8 @@ fixed fixtures, not a request to modify the finance engine's calculation date.
 
 ## Email and PayPal integration
 
-Emails use `example.com`: syntactically valid, fictional addresses, not deliverable
-Sandbox buyers. Join `InvoiceRow.customer_id` to `CustomerRow.id`, then pass its
+Emails use the reserved `example.com` and `example.org` domains: syntactically valid, fictional
+addresses, not deliverable Sandbox buyers. Join `InvoiceRow.customer_id` to `CustomerRow.id`, then pass its
 `email` as `NewInvoiceReq.recipient_email`. The public `Invoice` response schema
 is unchanged and does not expose customer email.
 
@@ -53,15 +58,20 @@ the returned ID. For Sandbox delivery configure an actual test buyer through
 `PAYPAL_SANDBOX_BUYER_EMAIL`, which the real gateway uses to override the seed email.
 Never treat a fabricated seed ID as a real PayPal invoice.
 
-## Coordination with F1-13
+## Persistence and downstream tasks
 
-This proposal introduces CustomerRow and InvoiceRow on the shared Base because
-main has no invoice persistence yet. InvoiceRow retains the fields proposed by
-PR #10 and adds nullable customer_id for compatibility with its existing fixtures.
-When integrating #10, reuse this InvoiceRow declaration and add ProposalRow to the
-same module; do not declare a second `invoices` table. Existing databases created
-from #10 need a schema migration for customer_id; create_all does not alter tables.
-Use a fresh isolated demo database when evaluating this proposal against main.
+This task owns `CustomerRow` and `InvoiceRow` on the shared `Base`. `InvoiceRow.customer_id`
+is `NOT NULL` with a foreign key to `customers.id`, so every invoice resolves to a recipient
+email. F1-13 adds `ProposalRow` to the same module and must not declare a second `invoices`
+table. The public `Invoice` response is unchanged and never exposes `customer_id` or the email.
 
-This task supplies data and persistence setup. Invoice HTTP endpoints, proposal
-lifecycle behavior and execution remain the responsibility of their service tasks.
+`tests/integration/test_flow_demo.py` documents the demo flow against the HTTP contract; its
+pending steps are `xfail(strict=True)` until their cards land (see `tests/integration/README.md`).
+
+This task supplies data and persistence setup. Invoice HTTP endpoints, proposal lifecycle
+behavior and execution remain the responsibility of their service tasks.
+
+
+Existing databases created with the earlier nullable customer_id column require a
+schema migration or a fresh disposable demo database. create_all does not alter
+existing tables. Preserve any database whose runtime data you need.
