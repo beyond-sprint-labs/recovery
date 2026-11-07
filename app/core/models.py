@@ -1,13 +1,13 @@
 """ORM models shared across the application.
 
-Customers and invoices (F1-08) and the audit trail (F1-16) share one ``Base``.
-Proposal and webhook tables are added by their owners as additive declarations.
+Customers and invoices (F1-08), the audit trail (F1-16) and proposals (F1-13) share one
+``Base``. Webhook tables are added by their owners as additive declarations.
 """
 
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, String
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -36,6 +36,70 @@ class InvoiceRow(Base):
     due_date: Mapped[str] = mapped_column(String(10), nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False)
     paypal_invoice_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+
+class ProposalRow(Base):
+    """Recovery proposals.
+
+    The row is inserted as ``DRAFTED`` (committed before any agent call) so the UNIQUE
+    ``idempotency_key`` protects concurrent requests. Result columns stay NULL until the
+    compare-and-set finalization. Columns used by later slices (customer token, execution
+    journal, reconciliation timestamp) are declared now because ``create_all`` never
+    migrates an existing table.
+    """
+
+    __tablename__ = "proposals"
+    __table_args__ = (Index("ix_proposals_invoice_id", "invoice_id"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    invoice_id: Mapped[str] = mapped_column(ForeignKey("invoices.id"), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False, unique=True)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    customer_message: Mapped[str] = mapped_column(String(500), nullable=False)
+    engine_version: Mapped[str] = mapped_column(String(16), nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False)
+
+    # Result of the drafting pipeline (NULL while DRAFTED).
+    customer_intent: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON(none_as_null=True), nullable=True
+    )
+    alternatives: Mapped[list[dict[str, Any]] | None] = mapped_column(
+        JSON(none_as_null=True), nullable=True
+    )
+    attempted: Mapped[list[dict[str, Any]] | None] = mapped_column(
+        JSON(none_as_null=True), nullable=True
+    )
+    blocked_reasons: Mapped[list[dict[str, Any]] | None] = mapped_column(
+        JSON(none_as_null=True), nullable=True
+    )
+    explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    customer_message_draft: Mapped[str | None] = mapped_column(Text, nullable=True)
+    policy_check: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON(none_as_null=True), nullable=True
+    )
+    text_number_check: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON(none_as_null=True), nullable=True
+    )
+    paypal_called: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    # Later slices (approve / customer portal / execution / reconciliation).
+    approved_alternative: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    customer_message_final: Mapped[str | None] = mapped_column(Text, nullable=True)
+    customer_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
+    customer_token_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    customer_token_used_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    execution: Mapped[dict[str, Any] | None] = mapped_column(JSON(none_as_null=True), nullable=True)
+    last_paypal_check_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class AuditEventRow(Base):

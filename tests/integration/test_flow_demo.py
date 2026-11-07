@@ -151,7 +151,7 @@ def test_scenario_catalog_exposes_the_demo_blocking_case() -> None:
 # --- Pending API steps ----------------------------------------------------------------------
 
 
-@_pending("F1-13 GET /invoices")
+# @_pending("F1-13 GET /invoices")
 def test_invoices_list_exposes_seed_without_customer_data(seeded_client: TestClient) -> None:
     response = _request(seeded_client, "GET", f"{API}/invoices")
     assert response.status_code == 200
@@ -164,7 +164,7 @@ def test_invoices_list_exposes_seed_without_customer_data(seeded_client: TestCli
         assert "customer_id" not in item
 
 
-@_pending("F1-13 GET /policy")
+# @_pending("F1-13 GET /policy")
 def test_policy_endpoint_serves_server_side_limits(seeded_client: TestClient) -> None:
     response = _request(seeded_client, "GET", f"{API}/policy")
     assert response.status_code == 200
@@ -176,7 +176,7 @@ def test_policy_endpoint_serves_server_side_limits(seeded_client: TestClient) ->
     )
 
 
-@_pending("F1-13/F1-15 blocked proposal")
+# @_pending("F1-13/F1-15 blocked proposal")
 def test_s03_discount_is_blocked_with_http_200_and_audit_event(seeded_client: TestClient) -> None:
     response = _create_proposal(seeded_client, BLOCKED_SCENARIO_ID, BLOCKED_MESSAGE)
     assert response.status_code == 200
@@ -218,7 +218,7 @@ def test_blocked_proposal_cannot_be_approved(seeded_client: TestClient) -> None:
     assert response.status_code == 409
 
 
-@_pending("F1-13 strict CreateProposalIn")
+# @_pending("F1-13 strict CreateProposalIn")
 def test_policy_in_request_body_is_rejected(seeded_client: TestClient) -> None:
     response = _request(
         seeded_client,
@@ -234,7 +234,7 @@ def test_policy_in_request_body_is_rejected(seeded_client: TestClient) -> None:
     assert response.status_code == 422
 
 
-@_pending("F1-13 Idempotency-Key is mandatory")
+# @_pending("F1-13 Idempotency-Key is mandatory")
 def test_missing_idempotency_key_is_rejected(seeded_client: TestClient) -> None:
     response = _request(
         seeded_client,
@@ -245,7 +245,7 @@ def test_missing_idempotency_key_is_rejected(seeded_client: TestClient) -> None:
     assert response.status_code == 422
 
 
-@_pending("F1-13 idempotent proposal creation")
+# @_pending("F1-13 idempotent proposal creation")
 def test_same_idempotency_key_returns_same_proposal(seeded_client: TestClient) -> None:
     key = str(uuid4())
     first = _create_proposal(seeded_client, BLOCKED_SCENARIO_ID, BLOCKED_MESSAGE, key)
