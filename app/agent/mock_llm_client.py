@@ -1,9 +1,9 @@
 """Deterministic mock LLM client for Recovery F1-06."""
 
 from collections.abc import Mapping
+from typing import cast
 
-from pydantic import BaseModel
-
+from app.agent.llm_client import ResponseT
 from app.core.schemas import CustomerIntent
 
 
@@ -20,8 +20,8 @@ class MockLLMClient:
         self,
         system: str,
         user: str,
-        schema: type[BaseModel],
-    ) -> BaseModel:
+        schema: type[ResponseT],
+    ) -> ResponseT:
         """Return a predefined response matching the requested schema."""
 
         if schema is not CustomerIntent:
@@ -30,6 +30,6 @@ class MockLLMClient:
         intent = self.responses.get(user)
 
         if intent is None:
-            return CustomerIntent()
+            return cast(ResponseT, CustomerIntent())
 
-        return intent.model_copy(deep=True)
+        return cast(ResponseT, intent.model_copy(deep=True))

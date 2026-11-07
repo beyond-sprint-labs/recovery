@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.agent.agent import AgentOutput, RecoveryAgent
+from app.agent.agent import AgentOutput, NegotiationAgent
 from app.core.schemas import CustomerIntent
 
 
@@ -19,7 +19,7 @@ def test_agent_calls_tool_for_valid_intent():
         available_now="300.00",
         preferred_installments=3,
     )
-    agent = RecoveryAgent(FakeLLMClient(intent))
+    agent = NegotiationAgent(FakeLLMClient(intent))
     received = []
 
     def fake_tool_runner(customer_intent):
@@ -39,7 +39,7 @@ def test_agent_calls_tool_for_valid_intent():
 
 
 def test_agent_does_not_call_tool_for_empty_intent():
-    agent = RecoveryAgent(FakeLLMClient(CustomerIntent()))
+    agent = NegotiationAgent(FakeLLMClient(CustomerIntent()))
     calls = []
 
     def fake_tool_runner(intent):
@@ -56,7 +56,7 @@ def test_agent_does_not_call_tool_for_empty_intent():
 
 def test_agent_passes_excessive_discount_to_backend():
     intent = CustomerIntent(requested_discount_pct="40")
-    agent = RecoveryAgent(FakeLLMClient(intent))
+    agent = NegotiationAgent(FakeLLMClient(intent))
     received = []
 
     def fake_tool_runner(customer_intent):
@@ -76,7 +76,7 @@ def test_agent_passes_excessive_discount_to_backend():
 
 def test_agent_propagates_finance_engine_failure():
     intent = CustomerIntent(available_now="300.00")
-    agent = RecoveryAgent(FakeLLMClient(intent))
+    agent = NegotiationAgent(FakeLLMClient(intent))
 
     def failing_tool_runner(customer_intent):
         raise RuntimeError("Finance engine unavailable")
@@ -86,7 +86,7 @@ def test_agent_propagates_finance_engine_failure():
 
 
 def test_agent_does_not_call_tool_for_greeting():
-    agent = RecoveryAgent(FakeLLMClient(CustomerIntent()))
+    agent = NegotiationAgent(FakeLLMClient(CustomerIntent()))
 
     def forbidden_tool_runner(customer_intent):
         pytest.fail("tool_runner must not be called")
@@ -105,7 +105,7 @@ def test_agent_delegates_only_customer_intent():
         preferred_installments=3,
     )
 
-    agent = RecoveryAgent(FakeLLMClient(intent))
+    agent = NegotiationAgent(FakeLLMClient(intent))
     received = []
 
     def fake_tool_runner(requested_terms):

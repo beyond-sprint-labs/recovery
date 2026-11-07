@@ -4,7 +4,8 @@ import json
 
 import pytest
 
-from app.agent.agent import RecoveryAgent
+from app.agent.agent import NegotiationAgent
+from app.agent.errors import AgentInputError
 from app.agent.mock_llm_client import MockLLMClient
 from app.agent.mock_text_llm_client import MockTextLLMClient
 from app.finance.engine import build_alternatives, calculate_alternatives
@@ -23,41 +24,40 @@ class RecordingTextClient:
 
 @pytest.fixture
 def engine_result():
-    """Two approved alternatives with deterministic figures."""
+    """Two approved alternatives from the real financial engine."""
+    policy = {
+        "currency": "USD",
+        "max_discount_pct": "15",
+        "min_down_payment_pct": "20",
+        "max_installments": 6,
+        "max_financing_rate_pct": "2.0",
+        "merchant_discount_rate_pct": "1.0",
+    }
+
+    alternatives = build_alternatives(
+        balance="1000.00",
+        pivot_date="2026-11-11",
+        policy=policy,
+        settlement_terms={"discount_pct": "10"},
+        installment_terms={
+            "down_payment_pct": "30",
+            "installments": 3,
+            "periodic_rate_pct": "1.5",
+        },
+    )
+
+    assert len(alternatives) == 2
+    assert all(item["policy_ok"] for item in alternatives)
 
     return {
         "engine_version": "1.0.0",
-        "alternatives": [
-            {
-                "type": "settlement_discount",
-                "terms": {"discount_pct": "10"},
-                "amount_due_now": "900.00",
-                "installment_amount": None,
-                "total_paid": "900.00",
-                "policy_ok": True,
-                "schedule": [{"amount": "900.00"}],
-            },
-            {
-                "type": "down_payment_installments",
-                "terms": {"installments": 3},
-                "amount_due_now": "300.00",
-                "installment_amount": "240.37",
-                "total_paid": "1021.10",
-                "policy_ok": True,
-                "schedule": [
-                    {"amount": "300.00"},
-                    {"amount": "240.37"},
-                    {"amount": "240.37"},
-                    {"amount": "240.36"},
-                ],
-            },
-        ],
+        "alternatives": alternatives,
     }
 
 
 def test_explanation_uses_approved_financial_figures(engine_result):
     text_client = RecordingTextClient()
-    agent = RecoveryAgent(MockLLMClient(), text_client)
+    agent = NegotiationAgent(MockLLMClient(), text_client)
 
     result = agent.explain_alternatives(engine_result)
 
@@ -75,7 +75,7 @@ def test_explanation_uses_approved_financial_figures(engine_result):
 
 def test_customer_message_uses_official_prompt(engine_result):
     text_client = RecordingTextClient()
-    agent = RecoveryAgent(MockLLMClient(), text_client)
+    agent = NegotiationAgent(MockLLMClient(), text_client)
 
     result = agent.draft_customer_message(engine_result)
 
@@ -86,30 +86,30 @@ def test_customer_message_uses_official_prompt(engine_result):
 
 def test_blocked_alternative_prevents_generation(engine_result):
     text_client = RecordingTextClient()
-    agent = RecoveryAgent(MockLLMClient(), text_client)
+    agent = NegotiationAgent(MockLLMClient(), text_client)
 
     engine_result["alternatives"][0]["policy_ok"] = False
 
-    with pytest.raises(ValueError, match="blocked"):
+    with pytest.raises(AgentInputError, match="blocked"):
         agent.explain_alternatives(engine_result)
 
     assert text_client.calls == []
 
 
 def test_missing_text_client_raises_error(engine_result):
-    agent = RecoveryAgent(MockLLMClient())
+    agent = NegotiationAgent(MockLLMClient())
 
-    with pytest.raises(RuntimeError, match="not configured"):
+    with pytest.raises(AgentInputError, match="not configured"):
         agent.explain_alternatives(engine_result)
 
 
 def test_missing_financial_figures_prevents_generation(engine_result):
     text_client = RecordingTextClient()
-    agent = RecoveryAgent(MockLLMClient(), text_client)
+    agent = NegotiationAgent(MockLLMClient(), text_client)
 
     engine_result["alternatives"][1]["total_paid"] = None
 
-    with pytest.raises(ValueError, match="Missing required"):
+    with pytest.raises(AgentInputError, match="engine contract"):
         agent.draft_customer_message(engine_result)
 
     assert text_client.calls == []
@@ -117,7 +117,7 @@ def test_missing_financial_figures_prevents_generation(engine_result):
 
 def test_mock_text_client_generates_exact_financial_figures(engine_result):
     """Demo drafts must preserve the engine-provided figures."""
-    agent = RecoveryAgent(
+    agent = NegotiationAgent(
         client=MockLLMClient(),
         text_client=MockTextLLMClient(),
     )
@@ -140,7 +140,7 @@ def test_mock_text_client_generates_exact_financial_figures(engine_result):
 
 def test_mock_text_client_is_deterministic(engine_result):
     """Identical inputs must produce identical drafts."""
-    agent = RecoveryAgent(
+    agent = NegotiationAgent(
         client=MockLLMClient(),
         text_client=MockTextLLMClient(),
     )
@@ -218,7 +218,7 @@ def test_real_finance_engine_generates_consistent_drafts():
     assert len(result["alternatives"]) == 2
     assert all(alternative["policy_ok"] for alternative in result["alternatives"])
 
-    agent = RecoveryAgent(
+    agent = NegotiationAgent(
         client=MockLLMClient(),
         text_client=MockTextLLMClient(),
     )
@@ -269,15 +269,70 @@ def test_real_finance_policy_blocks_unauthorized_drafts():
     }
 
     text_client = RecordingTextClient()
-    agent = RecoveryAgent(
+    agent = NegotiationAgent(
         client=MockLLMClient(),
         text_client=text_client,
     )
 
-    with pytest.raises(ValueError, match="blocked"):
+    with pytest.raises(AgentInputError, match="blocked"):
         agent.explain_alternatives(engine_result)
 
-    with pytest.raises(ValueError, match="blocked"):
+    with pytest.raises(AgentInputError, match="blocked"):
         agent.draft_customer_message(engine_result)
+
+    assert text_client.calls == []
+
+
+def test_single_approved_alternative(engine_result):
+    """One approved alternative must generate only Option A."""
+    agent = NegotiationAgent(
+        MockLLMClient(),
+        MockTextLLMClient(),
+    )
+
+    engine_result["alternatives"] = engine_result["alternatives"][:1]
+
+    result = agent.explain_alternatives(engine_result)
+
+    assert "Option A:" in result
+    assert "Option B:" not in result
+    assert "$900.00" in result
+
+
+def test_two_approved_alternatives(engine_result):
+    """Two approved alternatives must generate Option A and Option B."""
+    agent = NegotiationAgent(
+        MockLLMClient(),
+        MockTextLLMClient(),
+    )
+
+    result = agent.explain_alternatives(engine_result)
+
+    assert "Option A:" in result
+    assert "Option B:" in result
+
+
+def test_duplicate_alternative_type_rejected(engine_result):
+    """The agent must reject repeated alternative types."""
+    agent = NegotiationAgent(
+        MockLLMClient(),
+        MockTextLLMClient(),
+    )
+
+    engine_result["alternatives"][1] = engine_result["alternatives"][0].copy()
+
+    with pytest.raises(AgentInputError, match="Duplicate alternative type"):
+        agent.explain_alternatives(engine_result)
+
+
+def test_malformed_financial_figure_rejected(engine_result):
+    """Invalid monetary figures must never reach the text client."""
+    text_client = RecordingTextClient()
+    agent = NegotiationAgent(MockLLMClient(), text_client)
+
+    engine_result["alternatives"][0]["amount_due_now"] = "abc"
+
+    with pytest.raises(AgentInputError, match="engine contract"):
+        agent.explain_alternatives(engine_result)
 
     assert text_client.calls == []

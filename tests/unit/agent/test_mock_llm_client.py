@@ -3,7 +3,7 @@
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from app.agent.agent import RecoveryAgent
+from app.agent.agent import NegotiationAgent
 from app.agent.mock_llm_client import MockLLMClient
 from app.core.schemas import CustomerIntent
 from app.services.input_sanitizer import sanitize_customer_message
@@ -86,7 +86,7 @@ def test_injection_scenarios_do_not_trigger_tools(message):
             message: CustomerIntent(),
         }
     )
-    agent = RecoveryAgent(client)
+    agent = NegotiationAgent(client)
 
     def forbidden_tool_runner(intent):
         pytest.fail("Financial tool must not be called")
@@ -118,7 +118,7 @@ def test_hidden_characters_are_removed_before_agent():
             ),
         }
     )
-    agent = RecoveryAgent(client)
+    agent = NegotiationAgent(client)
     received = []
 
     def fake_tool_runner(intent):

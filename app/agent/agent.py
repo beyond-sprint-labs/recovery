@@ -4,11 +4,13 @@ import json
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import ValidationError
 
+from app.agent.errors import AgentInputError, InvalidAgentOutputError
 from app.agent.intent_extractor import extract_intent
 from app.agent.llm_client import LLMClient, TextLLMClient
-from app.core.schemas import CustomerIntent
+from app.agent.schemas import AgentOutput
+from app.core.schemas import Alternative, CustomerIntent, SettlementTerms
 
 # The backend owns invoice balance, dates, policy, and calculations.
 ToolRunner = Callable[[CustomerIntent], object]
@@ -19,92 +21,53 @@ EngineResult = Mapping[str, object]
 PROMPT_DIR = Path(__file__).resolve().parent / "prompts"
 
 
-class AgentOutput(BaseModel):
-    """Structured agent output agreed with the backend."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    intent: CustomerIntent
-    explanation: str | None = None
-    customer_message_draft: str | None = None
-
-
-def _prepare_financial_context(
-    engine_result: EngineResult,
-) -> str:
-    """Serialize allowlisted figures from approved alternatives."""
-
-    alternatives = engine_result.get("alternatives")
-
-    if not isinstance(alternatives, list):
-        raise ValueError("EngineResult must contain alternatives")
-
-    if len(alternatives) != 2:
-        raise ValueError("Exactly two alternatives are required")
-
-    expected_types = {
-        "settlement_discount",
-        "down_payment_installments",
-    }
-
-    approved = []
-
-    for alternative in alternatives:
-        if not isinstance(alternative, Mapping):
-            raise ValueError("Invalid alternative")
-
-        if alternative.get("policy_ok") is not True:
-            raise ValueError("Cannot draft blocked alternatives")
-
-        kind = alternative.get("type")
-
-        if kind not in expected_types:
-            raise ValueError("Unexpected alternative type")
-
-        terms = alternative.get("terms")
-        schedule = alternative.get("schedule")
-
-        if not isinstance(terms, Mapping):
-            raise ValueError("Invalid alternative terms")
-
-        if not isinstance(schedule, list) or not schedule:
-            raise ValueError("Invalid payment schedule")
-
-        if not all(isinstance(row, Mapping) for row in schedule):
-            raise ValueError("Invalid payment schedule entries")
-
-        figures = {
-            "type": kind,
-            "amount_due_now": alternative.get("amount_due_now"),
-            "installment_amount": alternative.get("installment_amount"),
-            "total_paid": alternative.get("total_paid"),
+def _figures(alt: Alternative) -> dict[str, object]:
+    """Allow-list financial figures without exposing internal engine data."""
+    if isinstance(alt.terms, SettlementTerms):
+        return {
+            "type": alt.type.value,
+            "amount_due_now": alt.amount_due_now,
+            "total_paid": alt.total_paid,
+            "discount_pct": alt.terms.discount_pct,
         }
 
-        if kind == "settlement_discount":
-            figures["discount_pct"] = terms.get("discount_pct")
-            required = (
-                "amount_due_now",
-                "total_paid",
-                "discount_pct",
-            )
-        else:
-            figures["installments"] = terms.get("installments")
-            figures["final_installment_amount"] = schedule[-1].get("amount")
-            required = (
-                "amount_due_now",
-                "installment_amount",
-                "total_paid",
-                "installments",
-                "final_installment_amount",
-            )
+    if alt.installment_amount is None or not alt.schedule:
+        raise AgentInputError("Installment alternative missing required figures")
 
-        if any(figures.get(field) is None for field in required):
-            raise ValueError("Missing required financial figures")
+    return {
+        "type": alt.type.value,
+        "amount_due_now": alt.amount_due_now,
+        "installments": alt.terms.installments,
+        "installment_amount": alt.installment_amount,
+        "final_installment_amount": alt.schedule[-1].amount,
+        "total_paid": alt.total_paid,
+    }
 
-        approved.append(figures)
 
-    if {item["type"] for item in approved} != expected_types:
-        raise ValueError("Both alternative types are required")
+def _prepare_financial_context(engine_result: EngineResult) -> str:
+    """Validate and serialize one or two approved alternatives."""
+
+    raw = engine_result.get("alternatives")
+    if not isinstance(raw, list) or not 1 <= len(raw) <= 2:
+        raise AgentInputError("EngineResult must contain one or two alternatives")
+
+    approved: list[dict[str, object]] = []
+    seen: set[str] = set()
+
+    for item in raw:
+        try:
+            alt = Alternative.model_validate(item)
+        except ValidationError as error:
+            raise AgentInputError("Alternative does not match the engine contract") from error
+
+        if not alt.policy_ok or alt.violations:
+            raise AgentInputError("Cannot draft blocked alternatives")
+
+        if alt.type.value in seen:
+            raise AgentInputError("Duplicate alternative type")
+
+        seen.add(alt.type.value)
+        approved.append(_figures(alt))
 
     return json.dumps(
         {"alternatives": approved},
@@ -113,7 +76,7 @@ def _prepare_financial_context(
     )
 
 
-class RecoveryAgent:
+class NegotiationAgent:
     """Extract intent and generate financial text drafts."""
 
     def __init__(
@@ -126,12 +89,12 @@ class RecoveryAgent:
 
     def run(
         self,
-        message: str,
+        sanitized_message: str,
         tool_runner: ToolRunner,
     ) -> AgentOutput:
         """Process a server-sanitized customer message."""
 
-        intent = extract_intent(message, self.client)
+        intent = extract_intent(sanitized_message, self.client)
 
         has_intent = any(
             value is not None
@@ -159,7 +122,7 @@ class RecoveryAgent:
         """Generate untrusted text using approved financial figures."""
 
         if self.text_client is None:
-            raise RuntimeError("Text LLM client is not configured")
+            raise AgentInputError("Text LLM client is not configured")
 
         financial_context = _prepare_financial_context(engine_result)
 
@@ -171,7 +134,7 @@ class RecoveryAgent:
         )
 
         if not isinstance(result, str) or not result.strip():
-            raise ValueError("Text LLM returned an empty response")
+            raise InvalidAgentOutputError("Text LLM returned an empty response")
 
         # RecoveryService must validate this text with text_guard.
         return result

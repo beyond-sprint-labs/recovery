@@ -2,6 +2,7 @@
 
 import pytest
 
+from app.agent.errors import AgentInputError, InvalidAgentOutputError
 from app.agent.intent_extractor import extract_intent
 from app.core.schemas import CustomerIntent
 
@@ -61,14 +62,14 @@ def test_missing_fields_are_not_invented():
 def test_empty_message_is_rejected():
     client = FakeLLMClient(CustomerIntent())
 
-    with pytest.raises(ValueError):
+    with pytest.raises(AgentInputError):
         extract_intent("   ", client)
 
 
 def test_invalid_client_response_is_rejected():
     client = FakeLLMClient("invalid")
 
-    with pytest.raises(TypeError):
+    with pytest.raises(InvalidAgentOutputError):
         extract_intent("I can pay today", client)
 
 
