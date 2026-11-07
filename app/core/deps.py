@@ -10,11 +10,15 @@ from app.agent.mock_agent import ScriptedAgent
 from app.core.config import Settings, get_settings
 from app.core.db import get_session_factory
 from app.core.errors import UpstreamError
+from app.paypal.factory import build_gateway
+from app.paypal.gateway import PayPalGateway
 from app.repositories.audit_repo import AuditRepo
+from app.repositories.execution_journal import SqlAlchemyExecutionJournal
 from app.repositories.invoices_repo import InvoicesRepo
 from app.repositories.proposals_repo import ProposalsRepo
 from app.repositories.unit_of_work import SqlAlchemyUnitOfWork
 from app.services.audit_service import AuditService
+from app.services.execution_service import ExecutionService
 from app.services.recovery_service import AgentBinding, AgentFactory, RecoveryService
 
 
@@ -72,3 +76,23 @@ def get_recovery_service(
 
 
 RecoveryServiceDep = Annotated[RecoveryService, Depends(get_recovery_service)]
+
+
+def get_paypal_gateway(settings: SettingsDep) -> PayPalGateway:
+    """Build the PayPal gateway based on PAYPAL_MODE (mock or real)."""
+    return build_gateway(settings)
+
+
+PayPalGatewayDep = Annotated[PayPalGateway, Depends(get_paypal_gateway)]
+
+
+def get_execution_service(
+    session: DbSession,
+    gateway: PayPalGatewayDep,
+) -> ExecutionService:
+    """Build the ExecutionService with the real SQLAlchemy journal."""
+    journal = SqlAlchemyExecutionJournal(session)
+    return ExecutionService(gateway=gateway, journal=journal)
+
+
+ExecutionServiceDep = Annotated[ExecutionService, Depends(get_execution_service)]

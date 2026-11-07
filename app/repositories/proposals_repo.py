@@ -14,7 +14,7 @@ from sqlalchemy.engine import CursorResult
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.models import ProposalRow
+from app.core.models import InvoiceRow, ProposalRow
 from app.core.schemas import (
     Alternative,
     AttemptedAlternative,
@@ -67,6 +67,7 @@ class ProposalRecord:
     engine_version: str
     currency: str
     result: ProposalResult | None  # None while the proposal is still DRAFTED
+    execution: dict[str, object] = None
 
 
 def _to_record(row: ProposalRow) -> ProposalRecord:
@@ -92,6 +93,7 @@ def _to_record(row: ProposalRow) -> ProposalRecord:
         engine_version=row.engine_version,
         currency=row.currency,
         result=result,
+        execution=row.execution or {},
     )
 
 
@@ -171,3 +173,58 @@ class ProposalsRepo:
         )
         outcome = cast("CursorResult[Any]", self._session.execute(stmt))
         return outcome.rowcount == 1
+
+    def update_status(
+        self,
+        *,
+        proposal_id: str,
+        expected_status: ProposalStatus,
+        new_status: ProposalStatus,
+    ) -> bool:
+        """State compare-and-set. Returns True if the transition was applied."""
+        stmt = (
+            update(ProposalRow)
+            .where(
+                ProposalRow.id == proposal_id,
+                ProposalRow.status == expected_status.value,
+            )
+            .values(
+                status=new_status.value,
+                updated_at=datetime.now(UTC),
+            )
+        )
+        outcome = cast("CursorResult[Any]", self._session.execute(stmt))
+        return outcome.rowcount == 1
+
+    def set_customer_token(self, proposal_id: str, token_hash: str, expires_at: datetime) -> None:
+        """Store the token hash and the expiration date (without storing the token in plaintext)."""
+        stmt = (
+            update(ProposalRow)
+            .where(ProposalRow.id == proposal_id)
+            .values(
+                customer_token_hash=token_hash,
+                customer_token_expires_at=expires_at,
+                updated_at=datetime.now(UTC),
+            )
+        )
+        self._session.execute(stmt)
+
+    def consume_customer_token(self, proposal_id: str) -> bool:
+        """Marks the token as used. Returns True if it was successfully consumed."""
+        stmt = (
+            update(ProposalRow)
+            .where(
+                ProposalRow.id == proposal_id,
+                ProposalRow.customer_token_used_at.is_(None),
+            )
+            .values(customer_token_used_at=datetime.now(UTC))
+        )
+        outcome = cast("CursorResult[Any]", self._session.execute(stmt))
+        return outcome.rowcount == 1
+
+    def get_invoice_for_proposal(self, proposal_id: str) -> InvoiceRow | None:
+        """Retrieves the invoice associated with a proposal (for the ExecutionService)."""
+        proposal = self._session.get(ProposalRow, proposal_id)
+        if proposal is None:
+            return None
+        return self._session.get(InvoiceRow, proposal.invoice_id)

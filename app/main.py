@@ -7,7 +7,7 @@ from typing import Final
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import audit, customer, health, invoices, proposals, webhooks
+from app.api.v1 import audit, customer, execution, health, invoices, proposals, webhooks
 from app.core.config import ENGINE_VERSION, get_settings
 from app.core.db import Base, get_engine
 from app.core.errors import register_exception_handlers
@@ -42,6 +42,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     for module in (invoices, proposals, customer, webhooks, audit):
         app.include_router(module.router, prefix=API_PREFIX)
+        app.include_router(execution.router, prefix="/api/v1")
 
     return app
 
