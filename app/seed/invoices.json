@@ -1,0 +1,7 @@
+[
+  {"id": "INV-001", "customer_id": "CUS-001", "customer_name": "Northwind Demo LLC", "currency": "USD", "balance": "1000.00", "due_date": "2026-10-15", "status": "OVERDUE", "paypal_invoice_id": null},
+  {"id": "INV-002", "customer_id": "CUS-002", "customer_name": "Contoso Demo Studio", "currency": "USD", "balance": "250.50", "due_date": "2026-09-30", "status": "OVERDUE", "paypal_invoice_id": null},
+  {"id": "INV-003", "customer_id": "CUS-003", "customer_name": "Fabrikam Demo Services", "currency": "USD", "balance": "1500.00", "due_date": "2026-10-31", "status": "OVERDUE", "paypal_invoice_id": null},
+  {"id": "INV-004", "customer_id": "CUS-001", "customer_name": "Northwind Demo LLC", "currency": "USD", "balance": "0.00", "due_date": "2026-09-15", "status": "PAID", "paypal_invoice_id": null},
+  {"id": "INV-005", "customer_id": "CUS-002", "customer_name": "Contoso Demo Studio", "currency": "USD", "balance": "400.00", "due_date": "2026-08-31", "status": "CANCELLED", "paypal_invoice_id": null}
+]
