@@ -56,10 +56,12 @@ class ScriptedAgent:
         tool_runner: ToolRunner,
     ) -> AgentOutput:
         """Extract predefined intent without executing external LLM calls."""
-        if self._key not in _SCENARIO_INTENTS:
+        if self._key is None:
+            raw: Mapping[str, object] = {}
+        elif self._key in _SCENARIO_INTENTS:
+            raw = _SCENARIO_INTENTS[self._key]
+        else:
             raise InvalidAgentOutputError("Unknown demo scenario")
-
-        raw = _SCENARIO_INTENTS[self._key]
 
         try:
             intent = CustomerIntent.model_validate(raw)

@@ -58,3 +58,27 @@ def test_unknown_scenario_is_rejected():
             sanitized_message="Any message",
             tool_runner=lambda intent: None,
         )
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Hello, I need help with my invoice.",
+        "I cannot pay the full amount right now.",
+    ],
+)
+def test_no_scenario_returns_empty_intent_without_tools(message):
+    """Free-text demo mode must request clarification, not fail critically."""
+    agent = ScriptedAgent(scenario_id=None)
+
+    def forbidden_tool_runner(intent):
+        pytest.fail("Financial tools must not run without a scenario")
+
+    output = agent.run(
+        sanitized_message=message,
+        tool_runner=forbidden_tool_runner,
+    )
+
+    assert output.intent.model_dump(exclude_none=True) == {}
+    assert output.explanation is None
+    assert output.customer_message_draft is None
