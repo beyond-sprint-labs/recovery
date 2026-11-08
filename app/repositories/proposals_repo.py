@@ -261,6 +261,80 @@ class ProposalsRepo:
         outcome = cast("CursorResult[Any]", self._session.execute(stmt))
         return outcome.rowcount == 1
 
+    def approve_pending_merchant(
+        self,
+        *,
+        proposal_id: str,
+        approved_alternative: AlternativeType,
+        token_hash: str,
+        token_expires_at: datetime,
+        customer_message_final: str,
+        now: datetime,
+    ) -> bool:
+        """Compare-and-set ``PENDING_MERCHANT -> PENDING_CUSTOMER`` with the approval payload.
+
+        Only the SHA-256 hash of the customer token is stored (DEC-16). ``APPROVED`` is a
+        transient state that is audited but never persisted. Returns False when no row matched.
+        """
+        stmt = (
+            update(ProposalRow)
+            .where(
+                ProposalRow.id == proposal_id,
+                ProposalRow.status == ProposalStatus.PENDING_MERCHANT.value,
+            )
+            .values(
+                status=ProposalStatus.PENDING_CUSTOMER.value,
+                approved_alternative=approved_alternative.value,
+                customer_token_hash=token_hash,
+                customer_token_expires_at=token_expires_at.astimezone(UTC),
+                customer_message_final=customer_message_final,
+                updated_at=now.astimezone(UTC),
+            )
+            .execution_options(synchronize_session=False)
+        )
+        outcome = cast("CursorResult[Any]", self._session.execute(stmt))
+        return outcome.rowcount == 1
+
+    def reject_pending_merchant(self, *, proposal_id: str, now: datetime) -> bool:
+        """Compare-and-set ``PENDING_MERCHANT -> REJECTED``. False when no row matched."""
+        stmt = (
+            update(ProposalRow)
+            .where(
+                ProposalRow.id == proposal_id,
+                ProposalRow.status == ProposalStatus.PENDING_MERCHANT.value,
+            )
+            .values(status=ProposalStatus.REJECTED.value, updated_at=now.astimezone(UTC))
+            .execution_options(synchronize_session=False)
+        )
+        outcome = cast("CursorResult[Any]", self._session.execute(stmt))
+        return outcome.rowcount == 1
+
+    def block_pending_merchant(
+        self,
+        *,
+        proposal_id: str,
+        reasons: list[RuleHit],
+        text_check: TextNumberCheck,
+        now: datetime,
+    ) -> bool:
+        """Compare-and-set ``PENDING_MERCHANT -> BLOCKED`` after a failed final-message check."""
+        stmt = (
+            update(ProposalRow)
+            .where(
+                ProposalRow.id == proposal_id,
+                ProposalRow.status == ProposalStatus.PENDING_MERCHANT.value,
+            )
+            .values(
+                status=ProposalStatus.BLOCKED.value,
+                blocked_reasons=[reason.model_dump(mode="json") for reason in reasons],
+                text_number_check=text_check.model_dump(mode="json"),
+                updated_at=now.astimezone(UTC),
+            )
+            .execution_options(synchronize_session=False)
+        )
+        outcome = cast("CursorResult[Any]", self._session.execute(stmt))
+        return outcome.rowcount == 1
+
     def save_execution_step(
         self,
         *,
