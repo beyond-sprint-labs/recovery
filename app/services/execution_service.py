@@ -335,6 +335,36 @@ class ExecutionService:
             draft_id,
         )
 
+    def cleanup_orphan_draft(
+        self, *, proposal_id: str, original_invoice_id: str
+    ) -> ExecutionResult:
+        """Delete the draft a failed execution could not delete. The proposal stays FAILED."""
+        snapshot = self._journal.load(proposal_id)
+        if snapshot is None or snapshot.draft_id is None:
+            raise ExecutionStateError(f"Proposal {proposal_id} has no orphan draft to clean up")
+        draft_id = snapshot.draft_id
+        run = _Run(
+            proposal_id,
+            original_invoice_id,
+            ProposalStatus.FAILED,
+            snapshot,
+            source="RECONCILIATION",
+            steps=["cleanup_started"],
+        )
+        draft = self._read(draft_id)
+        if draft is None or draft.status != DRAFT_STATUS:
+            detail = "unreadable" if draft is None else f"in status {draft.status}"
+            self._emit(
+                run,
+                ExecutionAction.FAILED,
+                Severity.CRITICAL,
+                f"Orphan draft {draft_id} is {detail}; manual review required.",
+                paypal_ref=draft_id,
+            )
+            return run.result(ProposalStatus.FAILED)
+        self._rollback_draft(run)
+        return run.result(ProposalStatus.FAILED)
+
     # ---- internals -------------------------------------------------------------------
 
     def _read(self, invoice_id: str) -> PayPalInvoiceState | None:

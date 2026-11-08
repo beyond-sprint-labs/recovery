@@ -660,22 +660,37 @@ class RecoveryService:
             raise ConflictError("EXECUTION_STATE_CONFLICT", str(err)) from err
 
     def reconcile_proposal(self, proposal_id: str) -> ProposalStatusOut:
-        """Resume NEEDS_RECONCILIATION from live PayPal state. Never cancels (DEC-27)."""
+        """Resume NEEDS_RECONCILIATION from live PayPal state. Never cancels (DEC-27).
+
+        A FAILED proposal that still owns an orphan draft is also accepted: only that draft is
+        deleted and the proposal stays FAILED.
+        """
         execution = self._execution()
         record = self._require_record(proposal_id)
-        if record.status is not ProposalStatus.NEEDS_RECONCILIATION:
+        has_orphan_draft = (
+            record.status is ProposalStatus.FAILED
+            and record.execution is not None
+            and record.execution.draft_id is not None
+        )
+        if record.status is not ProposalStatus.NEEDS_RECONCILIATION and not has_orphan_draft:
             raise ConflictError(
                 "PROPOSAL_NOT_RECONCILABLE",
-                "Only proposals in NEEDS_RECONCILIATION can be reconciled",
+                "Only proposals in NEEDS_RECONCILIATION, or FAILED with an orphan draft, "
+                "can be reconciled",
             )
         original_invoice_id = self._original_paypal_id(self._payment_context(record))
         last_seq = self._last_audit_seq(proposal_id)
 
         self._uow.rollback()  # invariant 5: no transaction open during PayPal calls
         try:
-            result = execution.reconcile(
-                proposal_id=proposal_id, original_invoice_id=original_invoice_id
-            )
+            if has_orphan_draft:
+                result = execution.cleanup_orphan_draft(
+                    proposal_id=proposal_id, original_invoice_id=original_invoice_id
+                )
+            else:
+                result = execution.reconcile(
+                    proposal_id=proposal_id, original_invoice_id=original_invoice_id
+                )
         except ExecutionStateError as err:
             raise ConflictError("EXECUTION_STATE_CONFLICT", str(err)) from err
         return ProposalStatusOut(

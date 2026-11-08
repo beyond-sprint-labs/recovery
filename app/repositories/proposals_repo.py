@@ -28,9 +28,11 @@ from app.core.schemas import (
 from app.core.states import ProposalStatus
 
 # Statuses in which execution steps that do not change the state may be persisted.
+# FAILED is allowed only so reconcile can clean up an orphan draft.
 EXECUTION_WRITABLE_STATUSES: Final = (
     ProposalStatus.EXECUTING.value,
     ProposalStatus.NEEDS_RECONCILIATION.value,
+    ProposalStatus.FAILED.value,
 )
 
 
@@ -84,14 +86,24 @@ class ExecutionRecord:
 
     @classmethod
     def from_json(cls, data: Mapping[str, Any]) -> Self:
-        if "request_id" not in data:
-            raise ValueError("proposals.execution is missing 'request_id'")
+        """Strict parse: a wrongly typed value is an error, never silently coerced."""
+        request_id = data.get("request_id")
         draft_id = data.get("draft_id")
+        cancelled = data.get("original_cancelled", False)
+        sent = data.get("new_sent", False)
+        if (
+            not isinstance(request_id, str)
+            or not request_id
+            or not (draft_id is None or (isinstance(draft_id, str) and draft_id))
+            or not isinstance(cancelled, bool)
+            or not isinstance(sent, bool)
+        ):
+            raise ValueError("proposals.execution is malformed")
         return cls(
-            request_id=str(data["request_id"]),
-            draft_id=str(draft_id) if draft_id is not None else None,
-            original_cancelled=bool(data.get("original_cancelled", False)),
-            new_sent=bool(data.get("new_sent", False)),
+            request_id=request_id,
+            draft_id=draft_id,
+            original_cancelled=cancelled,
+            new_sent=sent,
         )
 
 
