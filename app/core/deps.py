@@ -11,8 +11,9 @@ from app.agent.mock_agent import ScriptedAgent
 from app.core.config import Settings, get_settings
 from app.core.db import get_session_factory
 from app.core.errors import UpstreamError
-from app.paypal.factory import build_gateway
+from app.paypal.factory import build_gateway, build_webhook_verifier
 from app.paypal.gateway import PayPalError, PayPalGateway
+from app.paypal.signature import WebhookVerifier
 from app.repositories.audit_repo import AuditRepo
 from app.repositories.execution_journal import SqlExecutionJournal
 from app.repositories.invoices_repo import InvoicesRepo
@@ -118,3 +119,16 @@ def get_recovery_service(
 
 
 RecoveryServiceDep = Annotated[RecoveryService, Depends(get_recovery_service)]
+
+
+def get_webhook_verifier(settings: SettingsDep) -> WebhookVerifier:
+    """Build the verifier selected by ``PAYPAL_MODE`` only (never by request data).
+
+    In ``mock`` mode, the mock verifier accepts everything (so integration tests and the
+    local demo work without contacting PayPal). In ``real`` mode, the official
+    verify-webhook-signature endpoint is called (DEC-24, no SSRF, no X.509 download).
+    """
+    return build_webhook_verifier(settings)
+
+
+WebhookVerifierDep = Annotated[WebhookVerifier, Depends(get_webhook_verifier)]

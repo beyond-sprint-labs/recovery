@@ -135,3 +135,18 @@ class AuditEventRow(Base):
     paypal_called: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     source: Mapped[str | None] = mapped_column(String(16), nullable=True)
     paypal_ref: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
+
+class WebhookEventRow(Base):
+    """Processed PayPal webhook events (DEC-09 idempotency without Redis).
+
+    The ``event_id`` is the PRIMARY KEY, so a repeated event hits the UNIQUE constraint and
+    is ignored by the repository. No timestamps beyond ``received_at`` are needed: the event
+    body is not stored (it may contain customer data), only the fact it was processed.
+    """
+
+    __tablename__ = "webhook_events"
+
+    event_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
