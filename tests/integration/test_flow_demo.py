@@ -206,7 +206,7 @@ def test_s03_discount_is_blocked_with_http_200_and_audit_event(seeded_client: Te
     assert [item["event_id"] for item in feed.json()["items"]] == [event["event_id"]]
 
 
-@_pending("F1-15 blocked proposals are terminal")
+# @_pending("F1-15 blocked proposals are terminal")
 def test_blocked_proposal_cannot_be_approved(seeded_client: TestClient) -> None:
     blocked = _create_proposal(seeded_client, BLOCKED_SCENARIO_ID, BLOCKED_MESSAGE).json()
     response = _request(
