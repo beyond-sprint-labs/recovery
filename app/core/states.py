@@ -33,7 +33,7 @@ _S = ProposalStatus
 
 ALLOWED_TRANSITIONS: Final[dict[ProposalStatus, frozenset[ProposalStatus]]] = {
     _S.DRAFTED: frozenset({_S.PENDING_MERCHANT, _S.BLOCKED}),
-    _S.PENDING_MERCHANT: frozenset({_S.APPROVED, _S.REJECTED}),
+    _S.PENDING_MERCHANT: frozenset({_S.APPROVED, _S.REJECTED, _S.BLOCKED}),
     _S.APPROVED: frozenset({_S.PENDING_CUSTOMER}),
     _S.PENDING_CUSTOMER: frozenset({_S.ACCEPTED, _S.DECLINED, _S.EXPIRED}),
     _S.ACCEPTED: frozenset({_S.EXECUTING}),
