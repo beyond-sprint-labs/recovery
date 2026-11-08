@@ -31,6 +31,9 @@ export const auditColDefs: ColDef<AuditEvent>[] = [
     pinned: 'left',
     sort: 'desc',
     filter: 'agNumberColumnFilter',
+    cellRenderer: (params: { value: number }) => (
+      <span className="font-mono font-bold text-gray-700">{params.value}</span>
+    ),
   },
   {
     headerName: 'Timestamp',
@@ -44,22 +47,30 @@ export const auditColDefs: ColDef<AuditEvent>[] = [
     headerName: 'Severity',
     field: 'severity',
     width: 120,
-    cellClassRules: {
-      'badge-critical': (params) => params.value === 'CRITICAL',
-      'badge-warning': (params) => params.value === 'WARNING',
-      'badge-info': (params) => params.value === 'INFO',
+    cellRenderer: (params: { value: string }) => {
+      const isCritical = params.value === 'CRITICAL';
+      const isWarning = params.value === 'WARNING';
+      const cls = isCritical ? 'badge-critical' : isWarning ? 'badge-warning' : 'badge-info';
+      return <span className={cls}>{params.value || '-'}</span>;
     },
     filter: 'agTextColumnFilter',
   },
   {
     headerName: 'Action',
     field: 'action',
-    width: 220,
+    width: 230,
     filter: 'agTextColumnFilter',
     cellRenderer: (params: { value: string }) => {
       const isBlocked = params.value === 'PROPOSAL_BLOCKED';
+      const isPaypal = params.value && params.value.startsWith('PAYPAL_');
+      const isPaid = params.value === 'PAYMENT_CONFIRMED';
       return (
-        <span style={{ fontWeight: 600, color: isBlocked ? '#dc2626' : undefined }}>
+        <span
+          style={{
+            fontWeight: 700,
+            color: isBlocked ? '#dc2626' : isPaid ? '#16a34a' : isPaypal ? '#2563eb' : '#0f172a',
+          }}
+        >
           {params.value || '-'}
         </span>
       );
@@ -67,64 +78,81 @@ export const auditColDefs: ColDef<AuditEvent>[] = [
   },
   {
     headerName: 'State Transition',
-    width: 190,
+    width: 200,
     valueGetter: (params) => {
       const from = params.data?.state_from || 'INIT';
       const to = params.data?.state_to || '-';
       return `${from} → ${to}`;
     },
+    cellRenderer: (params: { value: string }) => (
+      <span className="font-mono text-xs font-semibold text-gray-600">{params.value}</span>
+    ),
     filter: 'agTextColumnFilter',
   },
   {
     headerName: 'Invoice',
     field: 'invoice_id',
     width: 120,
+    cellRenderer: (params: { value: string }) => (
+      <span className="font-mono font-bold text-gray-800">{params.value || '-'}</span>
+    ),
     filter: 'agTextColumnFilter',
   },
   {
     headerName: 'Proposal',
     field: 'proposal_id',
     width: 140,
-    valueFormatter: (p) => p.value || '-',
+    cellRenderer: (params: { value?: string | null }) => (
+      <span className="font-mono text-gray-600">{params.value || '-'}</span>
+    ),
     filter: 'agTextColumnFilter',
   },
   {
     headerName: 'Actor',
-    width: 160,
+    width: 170,
     valueGetter: (params) => {
       const a = params.data?.actor;
       return a ? `${a.type}:${a.id}` : '-';
     },
+    cellRenderer: (params: { value: string }) => (
+      <span className="font-mono text-xs">{params.value}</span>
+    ),
     filter: 'agTextColumnFilter',
   },
   {
     headerName: 'PayPal Called?',
     field: 'paypal_called',
-    width: 140,
+    width: 150,
     cellRenderer: (params: { value: boolean }) => {
       return params.value ? (
-        <span style={{ color: '#059669', fontWeight: 600 }}>YES (Called)</span>
+        <span style={{ color: '#059669', fontWeight: 700 }}>YES (Called)</span>
       ) : (
-        <span style={{ color: '#6b7280' }}>NO</span>
+        <span style={{ color: '#6b7280', fontWeight: 600 }}>NO</span>
       );
     },
     filter: true,
   },
   {
     headerName: 'Policy Rule',
-    width: 170,
+    width: 180,
     valueGetter: (params) => {
       const r = params.data?.rule;
       if (!r) return '-';
       return `${r.code} (${r.attempted}${r.unit ? r.unit : ''} > ${r.limit}${r.unit ? r.unit : ''})`;
+    },
+    cellRenderer: (params: { value: string }) => {
+      if (params.value === '-') return <span className="text-gray-400">-</span>;
+      return <span className="badge-critical font-mono">{params.value}</span>;
     },
     filter: 'agTextColumnFilter',
   },
   {
     headerName: 'PayPal Ref',
     field: 'paypal_ref',
-    width: 180,
-    valueFormatter: (p) => p.value || '-',
+    width: 190,
+    cellRenderer: (params: { value?: string | null }) => (
+      <span className="font-mono text-xs text-gray-700">{params.value || '-'}</span>
+    ),
     filter: 'agTextColumnFilter',
   },
   {
