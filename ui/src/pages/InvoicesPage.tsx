@@ -30,7 +30,9 @@ export const InvoicesPage: React.FC<InvoicesPageProps> = ({ onSelectInvoice }) =
       headerName: 'Invoice ID',
       field: 'id',
       width: 140,
-      cellRenderer: (p: { value: string }) => `<span style="font-weight: 600; font-family: monospace;">${p.value}</span>`,
+      cellRenderer: (p: { value: string }) => (
+        <span style={{ fontWeight: 600, fontFamily: 'monospace' }}>{p.value}</span>
+      ),
     },
     {
       headerName: 'Customer',
@@ -61,7 +63,20 @@ export const InvoicesPage: React.FC<InvoicesPageProps> = ({ onSelectInvoice }) =
         const isPaid = p.value === 'PAID';
         const color = isOverdue ? '#dc2626' : isPaid ? '#16a34a' : '#6b7280';
         const bg = isOverdue ? '#fee2e2' : isPaid ? '#dcfce7' : '#f3f4f6';
-        return `<span style="background: ${bg}; color: ${color}; padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 700;">${p.value}</span>`;
+        return (
+          <span
+            style={{
+              background: bg,
+              color: color,
+              padding: '3px 8px',
+              borderRadius: '9999px',
+              fontSize: '11px',
+              fontWeight: 700,
+            }}
+          >
+            {p.value}
+          </span>
+        );
       },
     },
     {
@@ -72,16 +87,20 @@ export const InvoicesPage: React.FC<InvoicesPageProps> = ({ onSelectInvoice }) =
     },
     {
       headerName: 'Action',
-      width: 180,
-      cellRenderer: (p: { data: Invoice }) => {
-        return `<button class="btn btn-primary btn-sm" id="btn-select-${p.data.id}">
-          Resolve Alternative &rarr;
-        </button>`;
-      },
-      onCellClicked: (p) => {
-        if (p.data) {
-          onSelectInvoice(p.data.id);
-        }
+      colId: 'action',
+      width: 190,
+      pinned: 'right',
+      cellRenderer: (p: { data?: Invoice }) => {
+        if (!p.data) return null;
+        return (
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => onSelectInvoice(p.data!.id)}
+            style={{ cursor: 'pointer', marginTop: '4px' }}
+          >
+            Resolve Alternative &rarr;
+          </button>
+        );
       },
     },
   ];

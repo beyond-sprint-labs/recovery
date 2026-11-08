@@ -58,7 +58,11 @@ export const auditColDefs: ColDef<AuditEvent>[] = [
     filter: 'agTextColumnFilter',
     cellRenderer: (params: { value: string }) => {
       const isBlocked = params.value === 'PROPOSAL_BLOCKED';
-      return `<span style="font-weight: 600; ${isBlocked ? 'color: #dc2626;' : ''}">${params.value || '-'}</span>`;
+      return (
+        <span style={{ fontWeight: 600, color: isBlocked ? '#dc2626' : undefined }}>
+          {params.value || '-'}
+        </span>
+      );
     },
   },
   {
@@ -98,9 +102,11 @@ export const auditColDefs: ColDef<AuditEvent>[] = [
     field: 'paypal_called',
     width: 140,
     cellRenderer: (params: { value: boolean }) => {
-      return params.value
-        ? `<span style="color: #059669; font-weight: 600;">YES (Called)</span>`
-        : `<span style="color: #6b7280;">NO</span>`;
+      return params.value ? (
+        <span style={{ color: '#059669', fontWeight: 600 }}>YES (Called)</span>
+      ) : (
+        <span style={{ color: '#6b7280' }}>NO</span>
+      );
     },
     filter: true,
   },
