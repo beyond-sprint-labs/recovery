@@ -23,6 +23,7 @@ CANCELLABLE_STATUSES: Final = frozenset({"SENT", "UNPAID"})  # confirmed against
 DRAFT_STATUS: Final = "DRAFT"
 SENT_STATUS: Final = "SENT"
 CANCELLED_STATUS: Final = "CANCELLED"
+PAID_STATUSES: Final = frozenset({"PAID", "MARKED_AS_PAID"})
 
 
 class ExecutionAction(StrEnum):
@@ -128,10 +129,29 @@ def _is_cancellable(state: PayPalInvoiceState) -> bool:
     return state.status in CANCELLABLE_STATUSES and not _has_payments(state)
 
 
+def is_paid_in_full(state: PayPalInvoiceState, expected_total: str) -> bool:
+    """True only if PayPal reports a paid status AND the paid amount covers the expected total.
+
+    Fail closed: a partial payment (PARTIALLY_PAID), a missing or unparsable paid amount, or any
+    other status is NOT a confirmed payment (DEC-29: PAID means the invoiced amount was paid).
+    """
+    if state.status not in PAID_STATUSES or state.paid_amount is None:
+        return False
+    try:
+        return Decimal(state.paid_amount) >= Decimal(expected_total)
+    except InvalidOperation:
+        return False
+
+
 class ExecutionService:
     def __init__(self, gateway: PayPalGateway, journal: ExecutionJournal) -> None:
         self._gateway = gateway
         self._journal = journal
+
+    @property
+    def gateway(self) -> PayPalGateway:
+        """Read access for lazy reconciliation and the Sandbox payment shortcut."""
+        return self._gateway
 
     # ---- public API ------------------------------------------------------------------
 
