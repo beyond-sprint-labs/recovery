@@ -23,6 +23,7 @@ CANCELLABLE_STATUSES: Final = frozenset({"SENT", "UNPAID"})  # confirmed against
 DRAFT_STATUS: Final = "DRAFT"
 SENT_STATUS: Final = "SENT"
 CANCELLED_STATUS: Final = "CANCELLED"
+PAID_STATUSES: Final = frozenset({"PAID", "MARKED_AS_PAID"})
 
 
 class ExecutionAction(StrEnum):
@@ -128,10 +129,29 @@ def _is_cancellable(state: PayPalInvoiceState) -> bool:
     return state.status in CANCELLABLE_STATUSES and not _has_payments(state)
 
 
+def is_paid_in_full(state: PayPalInvoiceState, expected_total: str) -> bool:
+    """True only if PayPal reports a paid status AND the paid amount covers the expected total.
+
+    Fail closed: a partial payment (PARTIALLY_PAID), a missing or unparsable paid amount, or any
+    other status is NOT a confirmed payment (DEC-29: PAID means the invoiced amount was paid).
+    """
+    if state.status not in PAID_STATUSES or state.paid_amount is None:
+        return False
+    try:
+        return Decimal(state.paid_amount) >= Decimal(expected_total)
+    except InvalidOperation:
+        return False
+
+
 class ExecutionService:
     def __init__(self, gateway: PayPalGateway, journal: ExecutionJournal) -> None:
         self._gateway = gateway
         self._journal = journal
+
+    @property
+    def gateway(self) -> PayPalGateway:
+        """Read access for lazy reconciliation and the Sandbox payment shortcut."""
+        return self._gateway
 
     # ---- public API ------------------------------------------------------------------
 
@@ -314,6 +334,36 @@ class ExecutionService:
             f"Unexpected state: original {original.status}, draft {draft.status}.",
             draft_id,
         )
+
+    def cleanup_orphan_draft(
+        self, *, proposal_id: str, original_invoice_id: str
+    ) -> ExecutionResult:
+        """Delete the draft a failed execution could not delete. The proposal stays FAILED."""
+        snapshot = self._journal.load(proposal_id)
+        if snapshot is None or snapshot.draft_id is None:
+            raise ExecutionStateError(f"Proposal {proposal_id} has no orphan draft to clean up")
+        draft_id = snapshot.draft_id
+        run = _Run(
+            proposal_id,
+            original_invoice_id,
+            ProposalStatus.FAILED,
+            snapshot,
+            source="RECONCILIATION",
+            steps=["cleanup_started"],
+        )
+        draft = self._read(draft_id)
+        if draft is None or draft.status != DRAFT_STATUS:
+            detail = "unreadable" if draft is None else f"in status {draft.status}"
+            self._emit(
+                run,
+                ExecutionAction.FAILED,
+                Severity.CRITICAL,
+                f"Orphan draft {draft_id} is {detail}; manual review required.",
+                paypal_ref=draft_id,
+            )
+            return run.result(ProposalStatus.FAILED)
+        self._rollback_draft(run)
+        return run.result(ProposalStatus.FAILED)
 
     # ---- internals -------------------------------------------------------------------
 
