@@ -1,0 +1,127 @@
+{
+  "proposal_id": "prop_7f3a9c",
+  "invoice_id": "INV-001",
+  "status": "PENDING_MERCHANT",
+  "engine_version": "1.0.0",
+  "currency": "USD",
+  "customer_intent": {
+    "available_now": "300.00",
+    "preferred_installments": 3,
+    "requested_discount_pct": null,
+    "desired_date": null
+  },
+  "alternatives": [
+    {
+      "type": "settlement_discount",
+      "terms": {
+        "discount_pct": "10"
+      },
+      "amount_due_now": "900.00",
+      "installment_amount": null,
+      "total_paid": "900.00",
+      "present_value": "900.00",
+      "financing_cost": "0.00",
+      "merchant_difference_vs_balance": "-100.00",
+      "policy_ok": true,
+      "violations": [],
+      "schedule": [
+        {
+          "n": 0,
+          "due_date": "2026-11-11",
+          "amount": "900.00",
+          "principal": "900.00",
+          "interest": "0.00"
+        }
+      ]
+    },
+    {
+      "type": "down_payment_installments",
+      "terms": {
+        "down_payment_pct": "30",
+        "installments": 3,
+        "periodic_rate_pct": "1.5"
+      },
+      "amount_due_now": "300.00",
+      "installment_amount": "240.37",
+      "total_paid": "1021.10",
+      "present_value": "1006.91",
+      "financing_cost": "21.10",
+      "merchant_difference_vs_balance": "6.91",
+      "policy_ok": true,
+      "violations": [],
+      "schedule": [
+        {
+          "n": 0,
+          "due_date": "2026-11-11",
+          "amount": "300.00",
+          "principal": "300.00",
+          "interest": "0.00"
+        },
+        {
+          "n": 1,
+          "due_date": "2026-12-11",
+          "amount": "240.37",
+          "principal": "229.87",
+          "interest": "10.50"
+        },
+        {
+          "n": 2,
+          "due_date": "2027-01-11",
+          "amount": "240.37",
+          "principal": "233.32",
+          "interest": "7.05"
+        },
+        {
+          "n": 3,
+          "due_date": "2027-02-11",
+          "amount": "240.36",
+          "principal": "236.81",
+          "interest": "3.55"
+        }
+      ]
+    }
+  ],
+  "attempted": [],
+  "blocked_reasons": [],
+  "explanation": "Option A: pay $900.00 today (10% settlement discount). Option B: pay $300.00 now plus 3 monthly installments of $240.37 (the last one is $240.36), for a total of $1021.10.",
+  "customer_message_draft": "Hi! We can offer you two options: $900.00 today, or $300.00 now plus 3 monthly payments of $240.37. Let us know which works best.",
+  "policy_check": {
+    "status": "PASSED",
+    "violations": []
+  },
+  "text_number_check": {
+    "status": "PASSED",
+    "numbers_in_text": [
+      "10",
+      "900.00",
+      "300.00",
+      "3",
+      "240.37",
+      "240.36",
+      "1021.10"
+    ],
+    "unmatched": []
+  },
+  "paypal_called": false,
+  "audit_event": {
+    "event_id": "aud_000005",
+    "seq": 5,
+    "ts": "2026-11-02T15:04:11Z",
+    "actor": {
+      "type": "SYSTEM",
+      "id": "recovery_service"
+    },
+    "action": "PROPOSAL_DRAFTED",
+    "invoice_id": "INV-001",
+    "proposal_id": "prop_7f3a9c",
+    "state_from": "DRAFTED",
+    "state_to": "PENDING_MERCHANT",
+    "severity": "INFO",
+    "rule": null,
+    "summary": "2 alternatives drafted within policy; awaiting merchant approval",
+    "proposed_by": null,
+    "paypal_called": false,
+    "source": null,
+    "paypal_ref": null
+  }
+}

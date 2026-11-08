@@ -1,0 +1,230 @@
+[
+  {
+    "event_id": "aud_000007",
+    "seq": 7,
+    "ts": "2026-11-02T15:04:31Z",
+    "actor": {
+      "type": "SYSTEM",
+      "id": "policy_engine"
+    },
+    "action": "PROPOSAL_BLOCKED",
+    "invoice_id": "INV-001",
+    "proposal_id": "prop_c41d02",
+    "state_from": "DRAFTED",
+    "state_to": "BLOCKED",
+    "severity": "CRITICAL",
+    "rule": {
+      "code": "MAX_DISCOUNT_PCT",
+      "limit": "15",
+      "attempted": "40",
+      "unit": "pct"
+    },
+    "summary": "AI-proposed 40% settlement discount exceeds merchant limit of 15%; PayPal not called",
+    "proposed_by": {
+      "type": "AGENT",
+      "id": "agent_v1",
+      "mode": "DEMO"
+    },
+    "paypal_called": false,
+    "source": null,
+    "paypal_ref": null
+  },
+  {
+    "event_id": "aud_000008",
+    "seq": 8,
+    "ts": "2026-11-02T15:06:02Z",
+    "actor": {
+      "type": "SYSTEM",
+      "id": "text_guard"
+    },
+    "action": "PROPOSAL_BLOCKED",
+    "invoice_id": "INV-001",
+    "proposal_id": "prop_e19b44",
+    "state_from": "DRAFTED",
+    "state_to": "BLOCKED",
+    "severity": "CRITICAL",
+    "rule": {
+      "code": "TEXT_NUMBER_MISMATCH",
+      "limit": null,
+      "attempted": "850.00",
+      "unit": "amount"
+    },
+    "summary": "AI-written text contains figure 850.00 not produced by the finance engine; PayPal not called",
+    "proposed_by": {
+      "type": "AGENT",
+      "id": "agent_v1",
+      "mode": "DEMO"
+    },
+    "paypal_called": false,
+    "source": null,
+    "paypal_ref": null
+  },
+  {
+    "event_id": "aud_000009",
+    "seq": 9,
+    "ts": "2026-11-02T15:10:00Z",
+    "actor": {
+      "type": "MERCHANT",
+      "id": "merchant_demo"
+    },
+    "action": "PROPOSAL_APPROVED",
+    "invoice_id": "INV-001",
+    "proposal_id": "prop_7f3a9c",
+    "state_from": "PENDING_MERCHANT",
+    "state_to": "APPROVED",
+    "severity": "INFO",
+    "rule": null,
+    "summary": "Merchant approved the down payment + installments option",
+    "proposed_by": null,
+    "paypal_called": false,
+    "source": null,
+    "paypal_ref": null
+  },
+  {
+    "event_id": "aud_000010",
+    "seq": 10,
+    "ts": "2026-11-02T15:10:00Z",
+    "actor": {
+      "type": "SYSTEM",
+      "id": "recovery_service"
+    },
+    "action": "CUSTOMER_LINK_ISSUED",
+    "invoice_id": "INV-001",
+    "proposal_id": "prop_7f3a9c",
+    "state_from": "APPROVED",
+    "state_to": "PENDING_CUSTOMER",
+    "severity": "INFO",
+    "rule": null,
+    "summary": "Single-use customer link issued; expires in 24 hours",
+    "proposed_by": null,
+    "paypal_called": false,
+    "source": null,
+    "paypal_ref": null
+  },
+  {
+    "event_id": "aud_000011",
+    "seq": 11,
+    "ts": "2026-11-02T15:12:20Z",
+    "actor": {
+      "type": "CUSTOMER",
+      "id": "customer_demo"
+    },
+    "action": "CUSTOMER_ACCEPTED",
+    "invoice_id": "INV-001",
+    "proposal_id": "prop_7f3a9c",
+    "state_from": "PENDING_CUSTOMER",
+    "state_to": "ACCEPTED",
+    "severity": "INFO",
+    "rule": null,
+    "summary": "Customer accepted the pre-approved option",
+    "proposed_by": null,
+    "paypal_called": false,
+    "source": null,
+    "paypal_ref": null
+  },
+  {
+    "event_id": "aud_000012",
+    "seq": 12,
+    "ts": "2026-11-02T15:12:20Z",
+    "actor": {
+      "type": "SYSTEM",
+      "id": "execution_service"
+    },
+    "action": "EXECUTION_STARTED",
+    "invoice_id": "INV-001",
+    "proposal_id": "prop_7f3a9c",
+    "state_from": "ACCEPTED",
+    "state_to": "EXECUTING",
+    "severity": "INFO",
+    "rule": null,
+    "summary": "PayPal replacement sequence started",
+    "proposed_by": null,
+    "paypal_called": false,
+    "source": null,
+    "paypal_ref": null
+  },
+  {
+    "event_id": "aud_000013",
+    "seq": 13,
+    "ts": "2026-11-02T15:07:05Z",
+    "actor": {
+      "type": "SYSTEM",
+      "id": "paypal_client"
+    },
+    "action": "PAYPAL_DRAFT_CREATED",
+    "invoice_id": "INV-001",
+    "proposal_id": "prop_7f3a9c",
+    "state_from": "EXECUTING",
+    "state_to": "EXECUTING",
+    "severity": "INFO",
+    "rule": null,
+    "summary": "Draft replacement invoice created on PayPal Sandbox",
+    "proposed_by": null,
+    "paypal_called": true,
+    "source": null,
+    "paypal_ref": "INV2-K4M9-2P7X-8Q3N-V5RD"
+  },
+  {
+    "event_id": "aud_000014",
+    "seq": 14,
+    "ts": "2026-11-02T15:07:18Z",
+    "actor": {
+      "type": "SYSTEM",
+      "id": "paypal_client"
+    },
+    "action": "PAYPAL_ORIGINAL_CANCELLED",
+    "invoice_id": "INV-001",
+    "proposal_id": "prop_7f3a9c",
+    "state_from": "EXECUTING",
+    "state_to": "EXECUTING",
+    "severity": "INFO",
+    "rule": null,
+    "summary": "Original PayPal invoice INV2-6W2K-7D9Q-4M3P-R8TX cancelled",
+    "proposed_by": null,
+    "paypal_called": true,
+    "source": null,
+    "paypal_ref": "INV2-6W2K-7D9Q-4M3P-R8TX"
+  },
+  {
+    "event_id": "aud_000015",
+    "seq": 15,
+    "ts": "2026-11-02T15:07:30Z",
+    "actor": {
+      "type": "SYSTEM",
+      "id": "paypal_client"
+    },
+    "action": "PAYPAL_INVOICE_SENT",
+    "invoice_id": "INV-001",
+    "proposal_id": "prop_7f3a9c",
+    "state_from": "EXECUTING",
+    "state_to": "EXECUTED",
+    "severity": "INFO",
+    "rule": null,
+    "summary": "Replacement PayPal invoice sent to customer",
+    "proposed_by": null,
+    "paypal_called": true,
+    "source": null,
+    "paypal_ref": "INV2-K4M9-2P7X-8Q3N-V5RD"
+  },
+  {
+    "event_id": "aud_000017",
+    "seq": 17,
+    "ts": "2026-11-02T15:13:05Z",
+    "actor": {
+      "type": "PAYPAL",
+      "id": "paypal_webhook"
+    },
+    "action": "PAYMENT_CONFIRMED",
+    "invoice_id": "INV-001",
+    "proposal_id": "prop_7f3a9c",
+    "state_from": "EXECUTED",
+    "state_to": "PAID",
+    "severity": "INFO",
+    "rule": null,
+    "summary": "First scheduled payment confirmed ($300.00)",
+    "proposed_by": null,
+    "paypal_called": true,
+    "source": "WEBHOOK",
+    "paypal_ref": "INV2-K4M9-2P7X-8Q3N-V5RD"
+  }
+]
