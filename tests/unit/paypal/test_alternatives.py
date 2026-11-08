@@ -56,7 +56,7 @@ def test_build_replacement_request(settlement_alt):
 
 def test_select_approved_alternative_fails_if_blocked(settlement_alt):
     blocked_alt = settlement_alt.model_copy(update={"policy_ok": False})
-    
+
     with pytest.raises(
         AlternativeMappingError, match="The approved alternative violates the policy"
     ):

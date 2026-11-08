@@ -28,7 +28,7 @@ def proposal(db_session: Session) -> str:
     # 2. We create the invoice
     invoice = InvoiceRow(
         id="INV-001",
-        customer_id="CUS-001", 
+        customer_id="CUS-001",
         customer_name="Test Customer",
         currency="USD",
         balance="1000.00",
