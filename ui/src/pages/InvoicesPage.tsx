@@ -112,6 +112,7 @@ export const InvoicesPage: React.FC<InvoicesPageProps> = ({ onSelectInvoice }) =
           columnDefs={columnDefs}
           pagination={true}
           paginationPageSize={10}
+          paginationPageSizeSelector={[10, 20, 50]}
           defaultColDef={{
             sortable: true,
             filter: true,
