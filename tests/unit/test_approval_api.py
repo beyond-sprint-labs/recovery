@@ -279,3 +279,25 @@ def test_invalid_approve_bodies_are_rejected(client: TestClient, payload: dict[s
     response = client.post(f"{BASE}/proposals/{proposal_id}/approve", json=payload)
     assert response.status_code == 422
     assert client.get(f"{BASE}/proposals/{proposal_id}").json()["status"] == "PENDING_MERCHANT"
+
+
+@pytest.mark.usefixtures("seeded")
+def test_spy_gateway_never_invoked_on_blocked_proposal(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """DoD F1-15: Ensure PayPal gateway is never instantiated or invoked for blocked proposals."""
+    from app.paypal.mock_gateway import MockPayPalGateway
+
+    class SpyGateway(MockPayPalGateway):
+        def create_draft(self, *args, **kwargs):
+            raise AssertionError("PayPal gateway must NEVER be called for blocked proposals")
+
+    monkeypatch.setattr("app.core.deps.get_paypal_gateway", lambda: SpyGateway())
+
+    blocked = _create(client, "S03_exceeds_discount", "Can I get 40% off?")
+    assert blocked["status"] == "BLOCKED"
+
+    # Trying to approve a blocked proposal should fail with 409 without touching the gateway
+    approve = _approve(client, blocked["proposal_id"])
+    assert approve.status_code == 409
+    assert approve.json()["error"]["code"] == "PROPOSAL_NOT_PENDING_MERCHANT"
