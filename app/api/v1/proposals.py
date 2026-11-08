@@ -1,11 +1,19 @@
-"""Proposal endpoints (F1-13 slice 1, F1-18b). Parse, delegate, serialize: nothing else."""
+"""Proposal endpoints (F1-13 slices 1-2, F1-18b). Parse, delegate, serialize: nothing else."""
 
 from typing import Annotated
 
 from fastapi import APIRouter, Header
 
 from app.core.deps import RecoveryServiceDep
-from app.core.schemas import CreateProposalIn, Policy, ProposalOut, ProposalStatusOut
+from app.core.schemas import (
+    ApproveIn,
+    ApproveOut,
+    CreateProposalIn,
+    Policy,
+    ProposalOut,
+    ProposalStatusOut,
+    RejectIn,
+)
 
 router = APIRouter(tags=["proposals"])
 
@@ -31,6 +39,20 @@ def create_proposal(
 def get_proposal(proposal_id: str, service: RecoveryServiceDep) -> ProposalOut:
     """Also reconciles lazily with PayPal when an EXECUTED proposal may have been paid."""
     return service.get_proposal(proposal_id)
+
+
+@router.post("/proposals/{proposal_id}/approve", response_model=ApproveOut)
+def approve_proposal(proposal_id: str, body: ApproveIn, service: RecoveryServiceDep) -> ApproveOut:
+    """Approve ONE alternative. The clear customer token appears only in this response."""
+    return service.approve_proposal(proposal_id, body)
+
+
+@router.post("/proposals/{proposal_id}/reject", response_model=ProposalStatusOut)
+def reject_proposal(
+    proposal_id: str, body: RejectIn, service: RecoveryServiceDep
+) -> ProposalStatusOut:
+    """Reject a proposal that is waiting for the merchant."""
+    return service.reject_proposal(proposal_id, body)
 
 
 @router.post("/proposals/{proposal_id}/reconcile", response_model=ProposalStatusOut)

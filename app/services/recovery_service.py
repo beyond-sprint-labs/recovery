@@ -19,12 +19,13 @@ import hashlib
 import json
 import logging
 import re
+import secrets
 import uuid
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
-from typing import Final, Protocol, cast
+from typing import Final, NoReturn, Protocol, cast
 
 from pydantic import ValidationError
 
@@ -37,6 +38,8 @@ from app.core.schemas import (
     Actor,
     Alternative,
     AlternativeType,
+    ApproveIn,
+    ApproveOut,
     AttemptedAlternative,
     AttemptedComputed,
     AuditEvent,
@@ -50,6 +53,7 @@ from app.core.schemas import (
     PolicyCheck,
     ProposalOut,
     ProposalStatusOut,
+    RejectIn,
     RuleHit,
     Severity,
     TextNumberCheck,
@@ -57,6 +61,7 @@ from app.core.schemas import (
 from app.core.states import ProposalStatus, assert_transition
 from app.finance import FinanceError, calculate_alternatives
 from app.finance.engine import ENGINE_VERSION
+from app.finance.policy import validate as validate_policy
 from app.paypal.alternatives import (
     AlternativeMappingError,
     build_replacement_request,
@@ -72,6 +77,10 @@ from app.repositories.proposals_repo import (
     ProposalRecord,
     ProposalResult,
     ProposalsRepo,
+)
+from app.services.approval_templates import (
+    build_final_message_allowed_numbers,
+    render_customer_message,
 )
 from app.services.audit_service import MAX_PAGE_LIMIT, AuditService
 from app.services.execution_service import (
@@ -99,6 +108,20 @@ _IDEMPOTENCY_KEY_RE: Final = re.compile(r"[A-Za-z0-9_.:-]{1,128}")
 # Lazy reconciliation asks PayPal at most once per interval and proposal (ROADMAP 4.5).
 LAZY_RECONCILE_INTERVAL: Final = timedelta(seconds=10)
 _MONEY_QUANTUM: Final = Decimal("0.01")
+
+_MERCHANT_ACTOR: Final = Actor(type="MERCHANT", id="merchant_demo")
+_APPROVAL_LABELS: Final = {
+    AlternativeType.SETTLEMENT_DISCOUNT: "settlement discount",
+    AlternativeType.DOWN_PAYMENT_INSTALLMENTS: "down payment + installments",
+}
+
+
+def _format_ttl(minutes: int) -> str:
+    """Human-readable token lifetime for the audit trail ("24 hours", "90 minutes")."""
+    if minutes % 60 == 0:
+        hours = minutes // 60
+        return f"{hours} hour" if hours == 1 else f"{hours} hours"
+    return f"{minutes} minutes"
 
 
 # --- ports ------------------------------------------------------------------------------
@@ -617,6 +640,217 @@ class RecoveryService:
             as_of=now.date(),
         )
         return self._finalize(proposal_id=proposal_id, invoice=invoice, decision=decision)
+
+        # --- merchant decision: approve / reject (F1-13 slice 2) ------------------------------
+
+    def approve_proposal(self, proposal_id: str, body: ApproveIn) -> ApproveOut:
+        """Approve ONE alternative and issue the single-use customer link (DEC-28).
+
+        Everything happens in one transaction with no outbound call: a compare-and-set
+        ``PENDING_MERCHANT -> PENDING_CUSTOMER`` plus the ``PROPOSAL_APPROVED`` and
+        ``CUSTOMER_LINK_ISSUED`` audit events. The clear token exists only in the returned
+        link; the database keeps its SHA-256 hash.
+        """
+        record = self._require_record(proposal_id)
+        self._require_pending_merchant(record, "approved")
+        alternative = self._offered_alternative(record, body.alternative_type)
+        now = self._clock()
+
+        message = render_customer_message(invoice_id=record.invoice_id, alternative=alternative)
+        check = check_text_numbers(
+            [message],
+            build_final_message_allowed_numbers(
+                alternative=alternative, invoice_id=record.invoice_id
+            ),
+        )
+        if check.status != "PASSED":
+            self._block_final_message(record=record, check=check, now=now)
+
+        assert_transition(ProposalStatus.PENDING_MERCHANT, ProposalStatus.APPROVED)
+        assert_transition(ProposalStatus.APPROVED, ProposalStatus.PENDING_CUSTOMER)
+
+        token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        ttl_minutes = self._settings.customer_token_ttl_min
+        expires_at = now + timedelta(minutes=ttl_minutes)
+        note = self._clean_note(body.note)
+        label = _APPROVAL_LABELS[body.alternative_type]
+
+        try:
+            if not self._proposals.approve_pending_merchant(
+                proposal_id=proposal_id,
+                approved_alternative=body.alternative_type,
+                token_hash=token_hash,
+                token_expires_at=expires_at,
+                customer_message_final=message,
+                now=now,
+            ):
+                raise ConflictError(
+                    "PROPOSAL_STATE_CONFLICT",
+                    "The proposal is no longer pending merchant approval",
+                )
+            approved_event = self._audit.record(
+                actor=_MERCHANT_ACTOR,
+                action="PROPOSAL_APPROVED",
+                severity=Severity.INFO,
+                summary=self._with_note(f"Merchant approved the {label} option", note),
+                invoice_id=record.invoice_id,
+                proposal_id=proposal_id,
+                state_from=ProposalStatus.PENDING_MERCHANT,
+                state_to=ProposalStatus.APPROVED,
+                paypal_called=False,
+            )
+            issued_event = self._audit.record(
+                actor=Actor(type="SYSTEM", id="recovery_service"),
+                action="CUSTOMER_LINK_ISSUED",
+                severity=Severity.INFO,
+                summary=(f"Single-use customer link issued; expires in {_format_ttl(ttl_minutes)}"),
+                invoice_id=record.invoice_id,
+                proposal_id=proposal_id,
+                state_from=ProposalStatus.APPROVED,
+                state_to=ProposalStatus.PENDING_CUSTOMER,
+                paypal_called=False,
+            )
+            self._uow.commit()
+        except Exception:
+            self._uow.rollback()
+            raise
+
+        base_url = self._settings.public_base_url.rstrip("/")
+        return ApproveOut(
+            proposal_id=proposal_id,
+            status=ProposalStatus.PENDING_CUSTOMER,
+            approved_alternative=body.alternative_type,
+            customer_link=f"{base_url}/customer/{token}",
+            customer_token_expires_at=expires_at,
+            audit_events=[approved_event, issued_event],
+        )
+
+    def reject_proposal(self, proposal_id: str, body: RejectIn) -> ProposalStatusOut:
+        """Compare-and-set ``PENDING_MERCHANT -> REJECTED`` with its audit event."""
+        record = self._require_record(proposal_id)
+        self._require_pending_merchant(record, "rejected")
+        assert_transition(ProposalStatus.PENDING_MERCHANT, ProposalStatus.REJECTED)
+        note = self._clean_note(body.note)
+
+        try:
+            if not self._proposals.reject_pending_merchant(
+                proposal_id=proposal_id, now=self._clock()
+            ):
+                raise ConflictError(
+                    "PROPOSAL_STATE_CONFLICT",
+                    "The proposal is no longer pending merchant approval",
+                )
+            event = self._audit.record(
+                actor=_MERCHANT_ACTOR,
+                action="PROPOSAL_REJECTED",
+                severity=Severity.INFO,
+                summary=self._with_note("Merchant rejected the proposal", note),
+                invoice_id=record.invoice_id,
+                proposal_id=proposal_id,
+                state_from=ProposalStatus.PENDING_MERCHANT,
+                state_to=ProposalStatus.REJECTED,
+                paypal_called=False,
+            )
+            self._uow.commit()
+        except Exception:
+            self._uow.rollback()
+            raise
+        return ProposalStatusOut(
+            proposal_id=proposal_id, status=ProposalStatus.REJECTED, audit_events=[event]
+        )
+
+    @staticmethod
+    def _require_pending_merchant(record: ProposalRecord, verb: str) -> None:
+        if record.status is not ProposalStatus.PENDING_MERCHANT:
+            raise ConflictError(
+                "PROPOSAL_NOT_PENDING_MERCHANT",
+                f"Only proposals in PENDING_MERCHANT can be {verb}; "
+                f"current status is {record.status.value}",
+            )
+
+    def _offered_alternative(
+        self, record: ProposalRecord, alternative_type: AlternativeType
+    ) -> Alternative:
+        """The chosen alternative, re-checked against the CURRENT server policy (fail closed)."""
+        if record.result is None:
+            raise ConflictError("PROPOSAL_IN_PROGRESS", "The proposal is still being drafted")
+        chosen = next(
+            (alt for alt in record.result.alternatives if alt.type == alternative_type), None
+        )
+        if chosen is None or not chosen.policy_ok or chosen.violations:
+            raise UnprocessableError(
+                "ALTERNATIVE_NOT_OFFERED",
+                "The chosen alternative was not offered within policy",
+            )
+        try:
+            violations = validate_policy(chosen.terms.model_dump(), self.get_policy().model_dump())
+        except FinanceError as err:
+            raise UnprocessableError(
+                "ALTERNATIVE_NOT_OFFERED",
+                "The chosen alternative could not be validated against the merchant policy",
+            ) from err
+        if violations:
+            raise UnprocessableError(
+                "ALTERNATIVE_NOT_OFFERED",
+                "The chosen alternative no longer complies with the merchant policy",
+            )
+        return chosen
+
+    def _block_final_message(
+        self, *, record: ProposalRecord, check: TextNumberCheck, now: datetime
+    ) -> NoReturn:
+        """Persist ``PENDING_MERCHANT -> BLOCKED(TEXT_NUMBER_MISMATCH)`` and answer 409 (AC12)."""
+        assert_transition(ProposalStatus.PENDING_MERCHANT, ProposalStatus.BLOCKED)
+        shown = ", ".join(check.unmatched)[:200]
+        reason = RuleHit(
+            code="TEXT_NUMBER_MISMATCH",
+            attempted=shown or None,
+            unit="figures",
+            message="The approval message contains figures the finance engine did not produce",
+        )
+        try:
+            if not self._proposals.block_pending_merchant(
+                proposal_id=record.proposal_id, reasons=[reason], text_check=check, now=now
+            ):
+                raise ConflictError(
+                    "PROPOSAL_STATE_CONFLICT",
+                    "The proposal is no longer pending merchant approval",
+                )
+            self._audit.record(
+                actor=Actor(type="SYSTEM", id="text_guard"),
+                action="PROPOSAL_BLOCKED",
+                severity=Severity.CRITICAL,
+                summary=(
+                    "Approval message contains figures not produced by the finance engine "
+                    f"({shown}); PayPal not called"
+                ),
+                invoice_id=record.invoice_id,
+                proposal_id=record.proposal_id,
+                state_from=ProposalStatus.PENDING_MERCHANT,
+                state_to=ProposalStatus.BLOCKED,
+                rule=reason,
+                paypal_called=False,
+            )
+            self._uow.commit()
+        except Exception:
+            self._uow.rollback()
+            raise
+        raise ConflictError(
+            "TEXT_NUMBER_MISMATCH",
+            "The approval message failed the text-number check; the proposal is now blocked",
+        )
+
+    @staticmethod
+    def _clean_note(note: str | None) -> str | None:
+        """Merchant notes are free text that lands in the audit trail: strip hidden characters."""
+        if note is None:
+            return None
+        return sanitize_customer_message(note).text or None
+
+    @staticmethod
+    def _with_note(summary: str, note: str | None) -> str:
+        return f"{summary}. Merchant note: {note}" if note else summary
 
     # --- PayPal execution, reconciliation and payment confirmation (F1-18b) ---------------
 
