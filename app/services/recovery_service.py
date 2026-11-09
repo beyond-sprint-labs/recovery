@@ -33,7 +33,13 @@ from app.agent.agent import ToolRunner
 from app.agent.errors import AgentError, AgentInputError
 from app.agent.schemas import AgentOutput
 from app.core.config import Settings
-from app.core.errors import ConflictError, NotFoundError, UnprocessableError, UpstreamError
+from app.core.errors import (
+    AppError,
+    ConflictError,
+    NotFoundError,
+    UnprocessableError,
+    UpstreamError,
+)
 from app.core.schemas import (
     Actor,
     Alternative,
@@ -45,7 +51,9 @@ from app.core.schemas import (
     AuditEvent,
     CreateProposalIn,
     Currency,
+    CustomerAlternativeView,
     CustomerIntent,
+    CustomerProposalView,
     Invoice,
     InvoiceStatus,
     PayPalExecution,
@@ -54,6 +62,8 @@ from app.core.schemas import (
     ProposalOut,
     ProposalStatusOut,
     RejectIn,
+    RespondIn,
+    RespondOut,
     RuleHit,
     Severity,
     TextNumberCheck,
@@ -110,6 +120,12 @@ LAZY_RECONCILE_INTERVAL: Final = timedelta(seconds=10)
 _MONEY_QUANTUM: Final = Decimal("0.01")
 
 _MERCHANT_ACTOR: Final = Actor(type="MERCHANT", id="merchant_demo")
+_CUSTOMER_ACTOR: Final = Actor(type="CUSTOMER", id="customer_demo")
+_CUSTOMER_TOKEN_RE: Final = re.compile(r"[A-Za-z0-9_-]{16,128}")
+CUSTOMER_SIMULATION_NOTICE: Final = (
+    "Simulation subject to merchant approval and customer acceptance. "
+    "Not financial or legal advice."
+)
 _APPROVAL_LABELS: Final = {
     AlternativeType.SETTLEMENT_DISCOUNT: "settlement discount",
     AlternativeType.DOWN_PAYMENT_INSTALLMENTS: "down payment + installments",
@@ -641,7 +657,7 @@ class RecoveryService:
         )
         return self._finalize(proposal_id=proposal_id, invoice=invoice, decision=decision)
 
-        # --- merchant decision: approve / reject (F1-13 slice 2) ------------------------------
+    # --- merchant decision: approve / reject (F1-13 slice 2) ------------------------------
 
     def approve_proposal(self, proposal_id: str, body: ApproveIn) -> ApproveOut:
         """Approve ONE alternative and issue the single-use customer link (DEC-28).
@@ -851,6 +867,222 @@ class RecoveryService:
     @staticmethod
     def _with_note(summary: str, note: str | None) -> str:
         return f"{summary}. Merchant note: {note}" if note else summary
+
+    # --- customer portal: view and binary response (F1-13 slice 3) -------------------------
+
+    def get_customer_proposal(self, token: str) -> CustomerProposalView:
+        """What the customer sees: ONE alternative, built field by field (DEC-28).
+
+        Never consumes the token. The only write is the lazy ``EXPIRED`` transition.
+        """
+        record = self._load_customer_record(token)
+        alternative = self._approved_alternative(record)
+        message = record.customer_message_final
+        expires_at = record.customer_token_expires_at
+        if not message or expires_at is None:
+            raise ConflictError(
+                "CUSTOMER_VIEW_UNAVAILABLE", "The proposal has no approved customer message"
+            )
+        invoice = self.get_invoice(record.invoice_id)
+        notice = CUSTOMER_SIMULATION_NOTICE
+        extra_notice = simulation_notice(alternative.type)
+        if extra_notice:
+            notice = f"{notice} {extra_notice}"
+        return CustomerProposalView(
+            proposal_id=record.proposal_id,
+            invoice_id=record.invoice_id,
+            currency=cast(Currency, record.currency),
+            original_balance=invoice.balance,
+            alternative=CustomerAlternativeView(
+                type=alternative.type,
+                terms=alternative.terms,
+                amount_due_now=alternative.amount_due_now,
+                installment_amount=alternative.installment_amount,
+                total_paid=alternative.total_paid,
+                schedule=alternative.schedule,
+            ),
+            customer_message=message,
+            expires_at=expires_at,
+            status=record.status,
+            simulation_notice=notice,
+        )
+
+    def respond_to_proposal(self, token: str, body: RespondIn) -> RespondOut:
+        """Binary customer decision. One CAS consumes the token and moves the state.
+
+        ``ACCEPT`` checks every execution prerequisite BEFORE consuming the token, so a
+        misconfigured invoice never burns the link. The PayPal sequence runs with no
+        transaction open (invariant 5).
+        """
+        record = self._load_customer_record(token)
+        proposal_id = record.proposal_id
+        accepted = body.decision == "ACCEPT"
+        if accepted:
+            self._assert_executable(record)
+        target = ProposalStatus.ACCEPTED if accepted else ProposalStatus.DECLINED
+        assert_transition(ProposalStatus.PENDING_CUSTOMER, target)
+
+        last_seq = self._last_audit_seq(proposal_id)
+        now = self._clock()
+        consumed = False
+        try:
+            consumed = self._proposals.consume_customer_token(
+                token_hash=self._hash_customer_token(token), status=target, now=now
+            )
+            if consumed:
+                self._audit.record(
+                    actor=_CUSTOMER_ACTOR,
+                    action="CUSTOMER_ACCEPTED" if accepted else "CUSTOMER_DECLINED",
+                    severity=Severity.INFO,
+                    summary=(
+                        "Customer accepted the pre-approved option"
+                        if accepted
+                        else "Customer declined the pre-approved option; PayPal not called"
+                    ),
+                    invoice_id=record.invoice_id,
+                    proposal_id=proposal_id,
+                    state_from=ProposalStatus.PENDING_CUSTOMER,
+                    state_to=target,
+                    paypal_called=False,
+                )
+                self._uow.commit()
+            else:
+                self._uow.rollback()
+        except Exception:
+            self._uow.rollback()
+            raise
+        if not consumed:
+            self._lost_token_race(token)
+
+        if not accepted:
+            return RespondOut(
+                proposal_id=proposal_id,
+                status=ProposalStatus.DECLINED,
+                paypal=None,
+                audit_events=self._events_since(proposal_id, last_seq),
+            )
+
+        self._start_execution(record)
+        try:
+            result = self.run_execution(proposal_id)
+        except AppError:
+            raise
+        except Exception as exc:
+            logger.error("Execution interrupted for proposal %s", proposal_id, exc_info=exc)
+            raise ConflictError(
+                "EXECUTION_INTERRUPTED",
+                "The execution was interrupted; check the proposal status before retrying",
+            ) from exc
+        return RespondOut(
+            proposal_id=proposal_id,
+            status=result.status,
+            paypal=PayPalExecution(
+                new_invoice_id=result.new_invoice_id,
+                original_invoice_id=result.original_invoice_id,
+                steps=list(result.steps),
+            ),
+            audit_events=self._events_since(proposal_id, last_seq),
+        )
+
+    @staticmethod
+    def _hash_customer_token(token: str) -> str:
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    def _load_customer_record(self, token: str) -> ProposalRecord:
+        """Resolve a token by its hash and apply the 404 / 409 rules. Fails closed."""
+        if _CUSTOMER_TOKEN_RE.fullmatch(token) is None:
+            raise NotFoundError("TOKEN_NOT_FOUND", "Customer link not found")
+        record = self._proposals.get_by_token_hash(self._hash_customer_token(token))
+        if record is None:
+            raise NotFoundError("TOKEN_NOT_FOUND", "Customer link not found")
+        if record.customer_token_used_at is not None:
+            raise ConflictError("TOKEN_ALREADY_USED", "This customer link was already used")
+        if record.status is ProposalStatus.EXPIRED:
+            raise ConflictError("TOKEN_EXPIRED", "This customer link has expired")
+        expires_at = record.customer_token_expires_at
+        if record.status is not ProposalStatus.PENDING_CUSTOMER or expires_at is None:
+            raise ConflictError(
+                "PROPOSAL_NOT_PENDING_CUSTOMER",
+                f"The proposal is not awaiting the customer; current status is "
+                f"{record.status.value}",
+            )
+        if expires_at <= self._clock():
+            self._expire_customer_link(record)
+            raise ConflictError("TOKEN_EXPIRED", "This customer link has expired")
+        return record
+
+    def _lost_token_race(self, token: str) -> NoReturn:
+        """The consuming CAS matched nothing: re-read and report why (never a silent success)."""
+        self._load_customer_record(token)
+        raise ConflictError(
+            "TOKEN_STATE_CONFLICT", "The customer link could not be consumed; retry the request"
+        )
+
+    def _expire_customer_link(self, record: ProposalRecord) -> None:
+        """Lazy ``PENDING_CUSTOMER -> EXPIRED`` with its audit event, in one transaction."""
+        assert_transition(ProposalStatus.PENDING_CUSTOMER, ProposalStatus.EXPIRED)
+        try:
+            if self._proposals.expire_pending_customer(
+                proposal_id=record.proposal_id, now=self._clock()
+            ):
+                self._audit.record(
+                    actor=Actor(type="SYSTEM", id="recovery_service"),
+                    action="CUSTOMER_LINK_EXPIRED",
+                    severity=Severity.INFO,
+                    summary="Customer link expired before the customer responded",
+                    invoice_id=record.invoice_id,
+                    proposal_id=record.proposal_id,
+                    state_from=ProposalStatus.PENDING_CUSTOMER,
+                    state_to=ProposalStatus.EXPIRED,
+                    paypal_called=False,
+                )
+                self._uow.commit()
+            else:
+                self._uow.rollback()
+        except Exception:
+            self._uow.rollback()
+            raise
+
+    def _assert_executable(self, record: ProposalRecord) -> None:
+        """Every prerequisite of ``run_execution``, checked while the token is still unused."""
+        self._execution()
+        alternative = self._approved_alternative(record)
+        context = self._payment_context(record)
+        self._original_paypal_id(context)
+        try:
+            build_replacement_request(
+                proposal_id=record.proposal_id,
+                alternative=alternative,
+                recipient_email=context.recipient_email,
+            )
+        except AlternativeMappingError as err:
+            raise UnprocessableError(err.code, err.message) from err
+
+    def _start_execution(self, record: ProposalRecord) -> None:
+        """Compare-and-set ``ACCEPTED -> EXECUTING`` with ``EXECUTION_STARTED``, committed."""
+        assert_transition(ProposalStatus.ACCEPTED, ProposalStatus.EXECUTING)
+        try:
+            if not self._proposals.begin_execution(
+                proposal_id=record.proposal_id, now=self._clock()
+            ):
+                raise ConflictError(
+                    "PROPOSAL_STATE_CONFLICT", "The proposal is no longer in ACCEPTED state"
+                )
+            self._audit.record(
+                actor=Actor(type="SYSTEM", id="recovery_service"),
+                action="EXECUTION_STARTED",
+                severity=Severity.INFO,
+                summary="Execution started; replacing the original invoice in PayPal",
+                invoice_id=record.invoice_id,
+                proposal_id=record.proposal_id,
+                state_from=ProposalStatus.ACCEPTED,
+                state_to=ProposalStatus.EXECUTING,
+                paypal_called=False,
+            )
+            self._uow.commit()
+        except Exception:
+            self._uow.rollback()
+            raise
 
     # --- PayPal execution, reconciliation and payment confirmation (F1-18b) ---------------
 
