@@ -14,7 +14,7 @@ import type {
 import type { AuditEvent } from '../types/api';
 import { auditColDefs } from '../grid/auditColumns';
 import { apiClient } from '../api/client';
-import { Activity, Play, Pause, RefreshCw, ShieldAlert } from 'lucide-react';
+import { Play, Pause, RefreshCw } from 'lucide-react';
 
 // Register AG Grid Community modules
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -119,12 +119,9 @@ export const AuditPage: React.FC = () => {
     <div className="page-container">
       <div className="page-header">
         <div>
-          <div className="badge-pill">
-            <Activity size={14} className="icon-pulse" /> Live Telemetry
-          </div>
           <h2>Live Audit & Compliance Trail</h2>
           <p className="subtitle">
-            Immutable AG Grid event stream monitoring financial guardrails, state transitions, and PayPal orchestration.
+            Immutable AG Grid event stream monitoring financial policy guardrails, state transitions, and PayPal orchestration.
           </p>
         </div>
 
@@ -132,41 +129,44 @@ export const AuditPage: React.FC = () => {
           <button
             className={`btn ${isStreaming ? 'btn-warning' : 'btn-primary'}`}
             onClick={() => setIsStreaming(!isStreaming)}
+            aria-label={isStreaming ? 'Pause live audit stream' : 'Resume live audit stream'}
           >
             {isStreaming ? (
               <>
-                <Pause size={16} /> Pause Live Stream
+                <Pause size={15} /> Pause Stream
               </>
             ) : (
               <>
-                <Play size={16} /> Resume Live Stream
+                <Play size={15} /> Resume Stream
               </>
             )}
           </button>
-          <button className="btn btn-secondary" onClick={handleResetStream}>
-            <RefreshCw size={16} /> Reset Stream
+          <button
+            className="btn btn-secondary"
+            onClick={handleResetStream}
+            aria-label="Reset audit stream to initial seed"
+          >
+            <RefreshCw size={15} /> Reset Stream
           </button>
         </div>
       </div>
 
       <div className="stats-bar">
         <div className="stat-card">
-          <span className="stat-label">Total Events Streamed</span>
+          <span className="stat-label">Events Streamed</span>
           <span className="stat-value">{eventCount}</span>
         </div>
         <div className="stat-card stat-critical">
-          <span className="stat-label">
-            <ShieldAlert size={14} /> Critical Guardrail Interceptions
-          </span>
+          <span className="stat-label">Guardrail Interceptions</span>
           <span className="stat-value">{blockedAlertCount}</span>
         </div>
         <div className="stat-card">
-          <span className="stat-label">Stream Frequency</span>
-          <span className="stat-value">~2.0s</span>
+          <span className="stat-label">Polling Interval</span>
+          <span className="stat-value">2.0s</span>
         </div>
         <div className="stat-card">
-          <span className="stat-label">License Mode</span>
-          <span className="stat-value highlight">AG Grid Community</span>
+          <span className="stat-label">Grid Engine</span>
+          <span className="stat-value">AG Grid Community</span>
         </div>
       </div>
 

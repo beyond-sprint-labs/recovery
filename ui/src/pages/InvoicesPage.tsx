@@ -4,7 +4,6 @@ import { themeQuartz } from 'ag-grid-community';
 import type { ColDef, ValueFormatterParams } from 'ag-grid-community';
 import type { Invoice } from '../types/api';
 import { apiClient } from '../api/client';
-import { FileText, ArrowRight } from 'lucide-react';
 
 interface InvoicesPageProps {
   onSelectInvoice: (invoiceId: string) => void;
@@ -61,22 +60,8 @@ export const InvoicesPage: React.FC<InvoicesPageProps> = ({ onSelectInvoice }) =
       cellRenderer: (p: { value: string }) => {
         const isOverdue = p.value === 'OVERDUE';
         const isPaid = p.value === 'PAID';
-        const color = isOverdue ? '#dc2626' : isPaid ? '#16a34a' : '#6b7280';
-        const bg = isOverdue ? '#fee2e2' : isPaid ? '#dcfce7' : '#f3f4f6';
-        return (
-          <span
-            style={{
-              background: bg,
-              color: color,
-              padding: '3px 8px',
-              borderRadius: '9999px',
-              fontSize: '11px',
-              fontWeight: 700,
-            }}
-          >
-            {p.value}
-          </span>
-        );
+        const cls = isOverdue ? 'badge-critical' : isPaid ? 'badge-success' : 'badge-info';
+        return <span className={cls}>{p.value}</span>;
       },
     },
     {
@@ -88,7 +73,7 @@ export const InvoicesPage: React.FC<InvoicesPageProps> = ({ onSelectInvoice }) =
     {
       headerName: 'Action',
       colId: 'action',
-      width: 190,
+      width: 180,
       pinned: 'right',
       cellRenderer: (p: { data?: Invoice }) => {
         if (!p.data) return null;
@@ -98,7 +83,7 @@ export const InvoicesPage: React.FC<InvoicesPageProps> = ({ onSelectInvoice }) =
             onClick={() => onSelectInvoice(p.data!.id)}
             style={{ cursor: 'pointer', marginTop: '4px' }}
           >
-            Resolve Alternative &rarr;
+            Review Options
           </button>
         );
       },
@@ -109,17 +94,14 @@ export const InvoicesPage: React.FC<InvoicesPageProps> = ({ onSelectInvoice }) =
     <div className="page-container">
       <div className="page-header">
         <div>
-          <div className="badge-pill">
-            <FileText size={14} /> Merchant Portfolio
-          </div>
           <h2>Overdue Invoices</h2>
           <p className="subtitle">
-            Manage overdue accounts, review active PayPal invoices, and draft AI-assisted settlement alternatives.
+            Merchant invoice portfolio: review overdue balances and dispatch mathematically valid repayment proposals.
           </p>
         </div>
         <div className="header-actions">
           <button className="btn btn-secondary" onClick={() => onSelectInvoice('INV-001')}>
-            Open INV-001 Comparator <ArrowRight size={16} />
+            Open INV-001 Comparator
           </button>
         </div>
       </div>

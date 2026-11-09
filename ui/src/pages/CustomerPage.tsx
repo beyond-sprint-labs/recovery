@@ -4,10 +4,7 @@ import type { CustomerProposalView, CustomerRespondResponse } from '../types/api
 import {
   CheckCircle,
   XCircle,
-  Clock,
   RefreshCw,
-  CreditCard,
-  Check,
 } from 'lucide-react';
 
 interface CustomerPageProps {
@@ -75,9 +72,9 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
   if (loading) {
     return (
       <div className="customer-wrapper">
-        <div className="customer-card text-center">
-          <RefreshCw className="icon-spin" size={32} />
-          <p style={{ marginTop: '16px' }}>Loading approved proposal details...</p>
+        <div className="customer-card text-center" style={{ padding: '40px' }}>
+          <RefreshCw className="icon-spin text-primary" size={28} style={{ margin: '0 auto 12px' }} />
+          <p className="text-secondary text-sm">Loading approved proposal details...</p>
         </div>
       </div>
     );
@@ -90,21 +87,21 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <div className="customer-card">
           <div className="text-center" style={{ marginBottom: '24px' }}>
             {isAccepted ? (
-              <CheckCircle size={48} className="text-success" style={{ margin: '0 auto 12px' }} />
+              <CheckCircle size={44} className="text-success" style={{ margin: '0 auto 12px' }} />
             ) : (
-              <XCircle size={48} className="text-danger" style={{ margin: '0 auto 12px' }} />
+              <XCircle size={44} className="text-danger" style={{ margin: '0 auto 12px' }} />
             )}
-            <h2>{isAccepted ? 'Repayment Plan Activated!' : 'Alternative Declined'}</h2>
+            <h2 style={{ margin: '0 0 6px 0' }}>{isAccepted ? 'Repayment Plan Activated' : 'Proposal Declined'}</h2>
             <p className="subtitle">
               {isAccepted
-                ? 'Your agreement has been submitted to PayPal Sandbox. The revised invoice schedule is now active.'
+                ? 'Your agreement has been recorded. Replacement invoice schedule is active on PayPal Sandbox.'
                 : 'You have declined this repayment offer. The merchant has been notified.'}
             </p>
           </div>
 
           {isAccepted && result.paypal && (
             <div className="paypal-receipt">
-              <h4>PayPal Sandbox Orchestration Details:</h4>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: '13px' }}>PayPal Sandbox Details:</h4>
               <div className="receipt-row">
                 <span>Original Invoice:</span>
                 <span className="font-mono">{result.paypal.original_invoice_id} (Cancelled)</span>
@@ -118,14 +115,14 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 <span className="font-mono font-bold">${proposalView?.alternative.amount_due_now} USD</span>
               </div>
               <div className="receipt-row">
-                <span>First Payment Status:</span>
+                <span>Payment Confirmation:</span>
                 <span className="badge-success">CONFIRMED (Sandbox Demo)</span>
               </div>
             </div>
           )}
 
           {onBackToMerchant && (
-            <button className="btn btn-secondary btn-block" style={{ marginTop: '24px' }} onClick={onBackToMerchant}>
+            <button className="btn btn-secondary btn-block" style={{ marginTop: '20px' }} onClick={onBackToMerchant}>
               Return to Merchant Dashboard
             </button>
           )}
@@ -138,15 +135,11 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     <div className="customer-wrapper">
       <div className="customer-card">
         <div className="customer-header">
-          <div className="brand-logo">
-            <CreditCard size={20} /> DueGuide Customer Portal
-          </div>
-          <span className="badge-pill">
-            <Clock size={12} /> Pre-Approved Offer
-          </span>
+          <span className="brand-text">DueGuide Customer Portal</span>
+          <span className="badge-status badge-info">Merchant Pre-Approved</span>
         </div>
 
-        <h3>Repayment Alternative Proposal</h3>
+        <h3 style={{ margin: '0 0 10px 0', fontSize: '18px' }}>Repayment Proposal</h3>
         <p className="customer-message-box">
           {proposalView?.customer_message}
         </p>
@@ -154,21 +147,21 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <div className="customer-terms-summary">
           <div className="term-box">
             <span className="term-label">Outstanding Balance</span>
-            <span className="term-value">${proposalView?.original_balance} USD</span>
+            <span className="term-value font-mono font-bold">${proposalView?.original_balance} USD</span>
           </div>
           <div className="term-box highlight-box">
-            <span className="term-label">Pay Now (Due Today)</span>
-            <span className="term-value font-bold text-success">${proposalView?.alternative.amount_due_now} USD</span>
+            <span className="term-label">Pay Today</span>
+            <span className="term-value font-mono font-bold highlight-green">${proposalView?.alternative.amount_due_now} USD</span>
           </div>
           <div className="term-box">
             <span className="term-label">Total Payment</span>
-            <span className="term-value font-bold">${proposalView?.alternative.total_paid} USD</span>
+            <span className="term-value font-mono font-bold">${proposalView?.alternative.total_paid} USD</span>
           </div>
         </div>
 
         {proposalView?.alternative.schedule && proposalView.alternative.schedule.length > 0 && (
-          <div className="customer-schedule">
-            <h4>Payment Schedule:</h4>
+          <div style={{ marginTop: '16px' }}>
+            <h4 style={{ margin: '0 0 8px 0', fontSize: '12px' }}>Payment Schedule:</h4>
             <table className="schedule-table">
               <thead>
                 <tr>
@@ -192,10 +185,10 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
 
         {executing ? (
           <div className="execution-stepper">
-            <div className="text-center" style={{ marginBottom: '16px' }}>
-              <RefreshCw className="icon-spin text-primary" size={28} />
-              <h4 style={{ marginTop: '8px' }}>Processing PayPal Transaction...</h4>
-              <p className="text-sm text-secondary">Orchestrating replacement invoice on PayPal Sandbox</p>
+            <div className="text-center" style={{ marginBottom: '14px' }}>
+              <RefreshCw className="icon-spin text-primary" size={24} style={{ margin: '0 auto 8px' }} />
+              <h4 style={{ margin: '0 0 4px 0', fontSize: '14px' }}>Processing PayPal Transaction...</h4>
+              <p className="text-sm text-secondary" style={{ margin: 0 }}>Orchestrating replacement invoice on PayPal Sandbox</p>
             </div>
 
             <div className="step-item">
@@ -208,7 +201,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             </div>
             <div className="step-item">
               <span className={`step-circle ${stepIndex >= 3 ? 'step-done' : stepIndex === 2 ? 'step-active' : ''}`}>3</span>
-              <span>Dispatch and issue PayPal replacement</span>
+              <span>Dispatch replacement PayPal invoice</span>
             </div>
           </div>
         ) : (
@@ -218,14 +211,14 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               style={{ flex: 1 }}
               onClick={() => handleDecision('ACCEPT')}
             >
-              <Check size={18} /> Accept Repayment Plan
+              Accept Repayment Plan
             </button>
             <button
               className="btn btn-outline-danger btn-lg"
               style={{ flex: 1 }}
               onClick={() => handleDecision('DECLINE')}
             >
-              <XCircle size={18} /> Decline Offer
+              Decline Offer
             </button>
           </div>
         )}
