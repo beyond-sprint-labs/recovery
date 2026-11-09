@@ -2,9 +2,9 @@
 
 from collections.abc import Iterator
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Final
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.agent.mock_agent import ScriptedAgent
@@ -132,3 +132,21 @@ def get_webhook_verifier(settings: SettingsDep) -> WebhookVerifier:
 
 
 WebhookVerifierDep = Annotated[WebhookVerifier, Depends(get_webhook_verifier)]
+
+MAX_WEBHOOK_BODY_BYTES: Final = 65_536
+
+
+async def get_raw_body(request: Request) -> bytes:
+    """Read raw webhook bytes with an early abort size cap."""
+    declared = request.headers.get("content-length")
+    if declared and declared.isdigit() and int(declared) > MAX_WEBHOOK_BODY_BYTES:
+        raise HTTPException(status_code=413, detail="Webhook body too large")
+    received = bytearray()
+    async for chunk in request.stream():
+        received.extend(chunk)
+        if len(received) > MAX_WEBHOOK_BODY_BYTES:
+            raise HTTPException(status_code=413, detail="Webhook body too large")
+    return bytes(received)
+
+
+RawBodyDep = Annotated[bytes, Depends(get_raw_body)]

@@ -3,6 +3,7 @@
 import logging
 from datetime import UTC, datetime
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.schemas import Actor, Severity
@@ -47,18 +48,24 @@ class WebhookService:
             logger.warning("No proposal found for draft_id %s", draft_id)
             return True
 
-        # 3. Only EXECUTED proposals can move to PAID. Anything else is a no-op.
+        # 3. Only EXECUTED proposals can move to PAID.
         if proposal.status is not ProposalStatus.EXECUTED:
+            if proposal.status in (ProposalStatus.EXECUTING, ProposalStatus.NEEDS_RECONCILIATION):
+                # In-flight: do not acknowledge, ask PayPal to retry.
+                self._session.rollback()
+                raise HTTPException(status_code=409, detail="Proposal still executing; retry later")
             logger.info(
                 "Proposal %s is in %s; ignoring PAID event",
                 proposal.proposal_id,
                 proposal.status.value,
             )
+            self._session.commit()  # commit the event registration so we don't process it again
             return True
 
         # 4. Compare-and-set EXECUTED -> PAID. If another path wins, the event is still safe.
         assert_transition(ProposalStatus.EXECUTED, ProposalStatus.PAID)
         now = datetime.now(UTC).replace(microsecond=0)
+
         if self._proposals.mark_paid(proposal_id=proposal.proposal_id, now=now):
             self._audit.record(
                 actor=Actor(type="PAYPAL", id="paypal_invoicing"),

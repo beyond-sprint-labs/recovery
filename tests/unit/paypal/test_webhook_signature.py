@@ -14,7 +14,7 @@ VERIFY_URL = f"{BASE}/v1/notifications/verify-webhook-signature"
 HEADERS = {
     "paypal-transmission-id": "trans-123",
     "paypal-transmission-time": "2026-11-08T12:00:00Z",
-    "paypal-cert-url": "https://api.paypal.com/v1/notifications/certs/CERT-360caa42-f...",
+    "paypal-cert-url": "https://api.paypal.com/v1/notifications/certs/CERT-360caa42-fca2a594",
     "paypal-auth-algo": "SHA256withRSA",
     "paypal-transmission-sig": "sig-abc",
 }

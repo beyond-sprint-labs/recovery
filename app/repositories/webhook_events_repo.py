@@ -13,20 +13,19 @@ class WebhookEventsRepo:
         self._session = session
 
     def register(self, event_id: str, event_type: str) -> bool:
-        """Register an event. Returns False if it was already processed (duplicate).
+        """Register an event. Returns False if it was already processed.
 
-        The ``event_id`` PRIMARY KEY is the real defence (DEC-09). We flush to hit the
-        constraint immediately, but we never commit here: the caller owns the transaction.
+        Uses a SAVEPOINT so the caller retains transaction ownership.
         """
         row = WebhookEventRow(
             event_id=event_id,
-            event_type=event_type,
-            received_at=datetime.now(UTC).replace(tzinfo=None),
+            event_type=event_type[:64],
+            received_at=datetime.now(UTC),
         )
-        self._session.add(row)
         try:
-            self._session.flush()
-            return True
+            with self._session.begin_nested():
+                self._session.add(row)
+                self._session.flush()
+                return True
         except IntegrityError:
-            self._session.rollback()
             return False

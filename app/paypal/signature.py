@@ -1,11 +1,24 @@
 """Webhook signature verification (F1-19 / DEC-24)."""
 
+import json
 from collections.abc import Mapping
-from typing import Protocol
+from typing import Final, Protocol
+from urllib.parse import urlsplit
 
 import httpx
 
 from app.core.config import Settings
+
+# DEC-24: these are the only hosts PayPal is allowed to point us at for certificate URLs.
+ALLOWED_CERT_HOSTS: Final = frozenset(
+    {
+        "api.paypal.com",
+        "api-m.paypal.com",
+        "api.sandbox.paypal.com",
+        "api-m.sandbox.paypal.com",
+    }
+)
+CERT_PATH_PREFIX: Final = "/v1/notifications/certs/"
 
 
 class WebhookVerifier(Protocol):
@@ -19,6 +32,23 @@ class MockWebhookVerifier:
         return True
 
 
+def is_trusted_cert_url(cert_url: str) -> bool:
+    """Validate cert_url before any outbound call (defence in depth, DEC-24)."""
+    try:
+        parts = urlsplit(cert_url)
+        return (
+            parts.scheme == "https"
+            and parts.hostname in ALLOWED_CERT_HOSTS
+            and parts.port in (None, 443)
+            and not parts.username
+            and not parts.password
+            and parts.path.startswith(CERT_PATH_PREFIX)
+            and ".." not in parts.path
+        )
+    except Exception:
+        return False
+
+
 class PayPalApiWebhookVerifier:
     """Calls the official PayPal endpoint to verify the signature (DEC-24).
 
@@ -30,7 +60,6 @@ class PayPalApiWebhookVerifier:
         self._base_url = str(settings.paypal_base_url).rstrip("/")
 
     def verify(self, headers: Mapping[str, str], raw_body: bytes) -> bool:
-        # These are the mandatory headers sent by PayPal
         required = {
             "paypal-transmission-id",
             "paypal-transmission-time",
@@ -38,24 +67,31 @@ class PayPalApiWebhookVerifier:
             "paypal-auth-algo",
             "paypal-transmission-sig",
         }
-        # Case-insensitive check
         normalized = {k.lower(): v for k, v in headers.items()}
         if not required.issubset(normalized.keys()):
             return False
 
-        payload = {
-            "transmission_id": normalized["paypal-transmission-id"],
-            "transmission_time": normalized["paypal-transmission-time"],
-            "cert_url": normalized["paypal-cert-url"],
-            "auth_algo": normalized["paypal-auth-algo"],
-            "transmission_sig": normalized["paypal-transmission-sig"],
-            "webhook_id": self._settings.paypal_webhook_id,
-            "webhook_event": raw_body.decode("utf-8"),
-        }
+        # 1. Validate cert_url BEFORE any outbound call.
+        if not is_trusted_cert_url(normalized.get("paypal-cert-url", "")):
+            return False
+
+        # 2. Build the envelope and splice the raw body EXACTLY as the webhook_event object.
+        #    Re-serializing a dict would reorder keys and may change float formatting.
+        envelope_base = json.dumps(
+            {
+                "transmission_id": normalized["paypal-transmission-id"],
+                "transmission_time": normalized["paypal-transmission-time"],
+                "cert_url": normalized["paypal-cert-url"],
+                "auth_algo": normalized["paypal-auth-algo"],
+                "transmission_sig": normalized["paypal-transmission-sig"],
+                "webhook_id": self._settings.paypal_webhook_id,
+            },
+            separators=(",", ":"),
+        )
+        content = envelope_base[:-1].encode("ascii") + b',"webhook_event":' + raw_body + b"}"
 
         try:
             with httpx.Client(timeout=10.0) as client:
-                # We need a token to call the verification endpoint
                 token_response = client.post(
                     f"{self._base_url}/v1/oauth2/token",
                     auth=(
@@ -70,8 +106,11 @@ class PayPalApiWebhookVerifier:
 
                 response = client.post(
                     f"{self._base_url}/v1/notifications/verify-webhook-signature",
-                    headers={"Authorization": f"Bearer {token}"},
-                    json=payload,
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Content-Type": "application/json",
+                    },
+                    content=content,
                 )
                 if response.status_code != 200:
                     return False
