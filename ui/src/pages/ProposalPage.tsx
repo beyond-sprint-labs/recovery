@@ -186,7 +186,7 @@ export const ProposalPage: React.FC<ProposalPageProps> = ({
             </div>
             <div className="overview-item">
               <span className="label">Original Outstanding:</span>
-              <span className="val font-semibold">${proposal?.alternatives[0]?.total_paid || '1000.00'} USD</span>
+              <span className="val font-semibold">$1000.00 USD</span>
             </div>
             <div className="overview-item">
               <span className="label">Engine Policy Check:</span>

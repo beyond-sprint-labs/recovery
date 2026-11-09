@@ -17,7 +17,17 @@ import mockCustomerProposal from '../mocks/customer_proposal.json';
 import mockAuditSeed from '../mocks/audit_events.seed.json';
 import mockAuditStream from '../mocks/audit_events.stream.json';
 
-const USE_MOCKS = import.meta.env.VITE_USE_MOCKS !== 'false';
+const getInitialUseMocks = (): boolean => {
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('use_mocks')) return params.get('use_mocks') !== 'false';
+    const stored = window.localStorage.getItem('USE_MOCKS');
+    if (stored !== null) return stored !== 'false';
+  }
+  return import.meta.env.VITE_USE_MOCKS !== 'false';
+};
+
+let USE_MOCKS = getInitialUseMocks();
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 // Internal state for mock streaming
@@ -32,6 +42,13 @@ function delay(min = 300, max = 600): Promise<void> {
 export const apiClient = {
   isMockMode(): boolean {
     return USE_MOCKS;
+  },
+
+  setMockMode(enable: boolean): void {
+    USE_MOCKS = enable;
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('USE_MOCKS', enable ? 'true' : 'false');
+    }
   },
 
   async getInvoices(): Promise<Invoice[]> {
