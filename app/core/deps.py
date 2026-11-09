@@ -7,6 +7,9 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.agent.agent import NegotiationAgent
+from app.agent.fallback_agent import FallbackAgent
+from app.agent.gemini_client import GeminiClient
 from app.agent.mock_agent import ScriptedAgent
 from app.core.config import Settings, get_settings
 from app.core.db import get_session_factory
@@ -46,18 +49,45 @@ AuditServiceDep = Annotated[AuditService, Depends(get_audit_service)]
 
 
 def get_agent_factory(settings: SettingsDep) -> AgentFactory:
-    """Build the agent for one request.
-
-    ``scenario_id`` (already filtered by the service) or ``AGENT_MODE=scripted`` selects the
-    deterministic agent: figures still come from the real finance engine. The LLM agent
-    arrives with F1-20; until then ``AGENT_MODE=llm`` without a scenario fails before any
-    write (502, no state change).
-    """
+    """Build the configured negotiation agent for one request."""
 
     def build(scenario_id: str | None) -> AgentBinding:
-        if scenario_id is not None or settings.agent_mode == "scripted":
-            return AgentBinding(agent=ScriptedAgent(scenario_id), mode="DEMO")
-        raise UpstreamError("AGENT_UNAVAILABLE", "The LLM agent is not available yet")
+        # Demo mode never requires API credentials or outbound requests.
+        if settings.demo_mode:
+            return AgentBinding(
+                agent=ScriptedAgent(scenario_id),
+                mode="DEMO",
+            )
+
+        # The service filters scenario IDs before invoking this factory.
+        if settings.agent_mode == "scripted" or scenario_id is not None:
+            return AgentBinding(
+                agent=ScriptedAgent(scenario_id),
+                mode="DEMO",
+            )
+
+        if settings.llm_provider != "gemini":
+            raise UpstreamError(
+                "AGENT_CONFIG_INVALID",
+                "Unsupported LLM provider",
+            )
+
+        if not settings.llm_model or not settings.llm_api_key.get_secret_value():
+            raise UpstreamError(
+                "AGENT_CONFIG_INVALID",
+                "LLM configuration is incomplete",
+            )
+
+        client = GeminiClient(settings)
+        primary = NegotiationAgent(
+            client=client,
+            text_client=client,
+        )
+
+        return AgentBinding(
+            agent=FallbackAgent(primary),
+            mode="LLM",
+        )
 
     return build
 

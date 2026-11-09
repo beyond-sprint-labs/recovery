@@ -11,3 +11,11 @@ class InvalidAgentOutputError(AgentError):
 
 class AgentInputError(AgentError):
     """The agent received input it must refuse or cannot safely process."""
+
+
+class LLMUnavailableError(AgentError):
+    """The LLM provider is temporarily unavailable.
+
+    Used for retryable transport failures, timeouts, or quota limits.
+    It must not be used for invalid model output or finance errors.
+    """

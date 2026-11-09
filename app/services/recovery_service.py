@@ -639,7 +639,12 @@ class RecoveryService:
             policy=policy,
             as_of=now.date(),
         )
-        return self._finalize(proposal_id=proposal_id, invoice=invoice, decision=decision)
+        return self._finalize(
+            proposal_id=proposal_id,
+            invoice=invoice,
+            decision=decision,
+            fallback_used=bool(getattr(binding.agent, "fallback_used", False)),
+        )
 
         # --- merchant decision: approve / reject (F1-13 slice 2) ------------------------------
 
@@ -1305,7 +1310,14 @@ class RecoveryService:
             "awaiting merchant approval",
         )
 
-    def _finalize(self, *, proposal_id: str, invoice: Invoice, decision: _Decision) -> ProposalOut:
+    def _finalize(
+        self,
+        *,
+        proposal_id: str,
+        invoice: Invoice,
+        decision: _Decision,
+        fallback_used: bool = False,
+    ) -> ProposalOut:
         """Compare-and-set DRAFTED -> final state and the audit event, atomically."""
         assert_transition(ProposalStatus.DRAFTED, decision.status)
         try:
@@ -1320,6 +1332,18 @@ class RecoveryService:
                     "PROPOSAL_STATE_CONFLICT",
                     "The proposal is no longer in DRAFTED state",
                 )
+
+            if fallback_used:
+                self._audit.record(
+                    actor=Actor(type="SYSTEM", id="llm_fallback"),
+                    action="LLM_FALLBACK_ACTIVATED",
+                    severity=Severity.WARN,
+                    summary=("LLM output unavailable or invalid; deterministic fallback activated"),
+                    invoice_id=invoice.id,
+                    proposal_id=proposal_id,
+                    paypal_called=False,
+                )
+
             event = self._audit.record(
                 actor=decision.actor,
                 action=decision.action,
