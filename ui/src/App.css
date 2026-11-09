@@ -217,18 +217,38 @@ a:focus-visible {
   border: 1px solid var(--border-light);
 }
 
-.ag-theme-quartz .row-blocked-critical {
+/* Ensure clean cell focus outline without artificial text background highlighting */
+.ag-root-wrapper {
+  --ag-range-selection-border-color: #2563eb;
+  --ag-range-selection-background-color: transparent !important;
+}
+
+.ag-cell-focus {
+  border: 1px solid #2563eb !important;
+  outline: none !important;
+}
+
+.ag-cell::selection,
+.ag-cell *::selection {
+  background-color: rgba(37, 99, 235, 0.2) !important;
+  color: #0f172a !important;
+}
+
+.ag-theme-quartz .row-blocked-critical,
+.row-blocked-critical {
   background-color: var(--danger-bg) !important;
   color: var(--danger-dark) !important;
   font-weight: 600;
   border-left: 4px solid var(--danger) !important;
 }
 
-.ag-theme-quartz .row-blocked-critical .ag-cell {
+.ag-theme-quartz .row-blocked-critical .ag-cell,
+.row-blocked-critical .ag-cell {
   background-color: var(--danger-bg) !important;
 }
 
-.ag-theme-quartz .row-payment-success {
+.ag-theme-quartz .row-payment-success,
+.row-payment-success {
   background-color: var(--success-bg) !important;
   border-left: 4px solid var(--success) !important;
 }

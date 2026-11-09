@@ -67,24 +67,26 @@ export const InvoicesPage: React.FC<InvoicesPageProps> = ({ onSelectInvoice }) =
     {
       headerName: 'PayPal Invoice ID',
       field: 'paypal_invoice_id',
-      width: 220,
+      width: 250,
       valueFormatter: (p: ValueFormatterParams) => p.value || 'Unlinked',
     },
     {
       headerName: 'Action',
       colId: 'action',
-      width: 180,
+      width: 170,
       pinned: 'right',
       cellRenderer: (p: { data?: Invoice }) => {
         if (!p.data) return null;
         return (
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => onSelectInvoice(p.data!.id)}
-            style={{ cursor: 'pointer', marginTop: '4px' }}
-          >
-            Review Options
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => onSelectInvoice(p.data!.id)}
+              style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}
+            >
+              Review Options
+            </button>
+          </div>
         );
       },
     },

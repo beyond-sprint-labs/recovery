@@ -109,13 +109,13 @@ export const auditColDefs: ColDef<AuditEvent>[] = [
   },
   {
     headerName: 'Actor',
-    width: 170,
+    width: 220,
     valueGetter: (params) => {
       const a = params.data?.actor;
       return a ? `${a.type}:${a.id}` : '-';
     },
     cellRenderer: (params: { value: string }) => (
-      <span className="font-mono text-xs">{params.value}</span>
+      <span className="font-mono text-xs text-gray-700" title={params.value}>{params.value}</span>
     ),
     filter: 'agTextColumnFilter',
   },
