@@ -120,6 +120,9 @@ class ProposalRecord:
     approved_alternative: AlternativeType | None = None
     execution: ExecutionRecord | None = None
     last_paypal_check_at: datetime | None = None
+    customer_token_expires_at: datetime | None = None
+    customer_token_used_at: datetime | None = None
+    customer_message_final: str | None = None
 
 
 def _as_utc(value: datetime | None) -> datetime | None:
@@ -157,6 +160,9 @@ def _to_record(row: ProposalRow) -> ProposalRecord:
         ),
         execution=ExecutionRecord.from_json(row.execution) if row.execution else None,
         last_paypal_check_at=_as_utc(row.last_paypal_check_at),
+        customer_token_expires_at=_as_utc(row.customer_token_expires_at),
+        customer_token_used_at=_as_utc(row.customer_token_used_at),
+        customer_message_final=row.customer_message_final,
     )
 
 
@@ -330,6 +336,70 @@ class ProposalsRepo:
                 text_number_check=text_check.model_dump(mode="json"),
                 updated_at=now.astimezone(UTC),
             )
+            .execution_options(synchronize_session=False)
+        )
+        outcome = cast("CursorResult[Any]", self._session.execute(stmt))
+        return outcome.rowcount == 1
+
+    def get_by_token_hash(self, token_hash: str) -> ProposalRecord | None:
+        """Look a proposal up by the SHA-256 hash of its customer token (DEC-16)."""
+        stmt = (
+            select(ProposalRow)
+            .where(ProposalRow.customer_token_hash == token_hash)
+            .execution_options(populate_existing=True)
+        )
+        row = self._session.scalars(stmt).one_or_none()
+        return _to_record(row) if row is not None else None
+
+    def consume_customer_token(
+        self, *, token_hash: str, status: ProposalStatus, now: datetime
+    ) -> bool:
+        """Single-statement compare-and-set: consume the token AND move the state.
+
+        Matches only a ``PENDING_CUSTOMER`` proposal whose token is unused and not expired, so a
+        double click, a replay or an expired link updates zero rows. Returns False in that case.
+        """
+        moment = now.astimezone(UTC)
+        stmt = (
+            update(ProposalRow)
+            .where(
+                ProposalRow.customer_token_hash == token_hash,
+                ProposalRow.status == ProposalStatus.PENDING_CUSTOMER.value,
+                ProposalRow.customer_token_used_at.is_(None),
+                ProposalRow.customer_token_expires_at > moment,
+            )
+            .values(status=status.value, customer_token_used_at=moment, updated_at=moment)
+            .execution_options(synchronize_session=False)
+        )
+        outcome = cast("CursorResult[Any]", self._session.execute(stmt))
+        return outcome.rowcount == 1
+
+    def expire_pending_customer(self, *, proposal_id: str, now: datetime) -> bool:
+        """Compare-and-set ``PENDING_CUSTOMER -> EXPIRED`` for an unused, expired token."""
+        moment = now.astimezone(UTC)
+        stmt = (
+            update(ProposalRow)
+            .where(
+                ProposalRow.id == proposal_id,
+                ProposalRow.status == ProposalStatus.PENDING_CUSTOMER.value,
+                ProposalRow.customer_token_used_at.is_(None),
+                ProposalRow.customer_token_expires_at <= moment,
+            )
+            .values(status=ProposalStatus.EXPIRED.value, updated_at=moment)
+            .execution_options(synchronize_session=False)
+        )
+        outcome = cast("CursorResult[Any]", self._session.execute(stmt))
+        return outcome.rowcount == 1
+
+    def begin_execution(self, *, proposal_id: str, now: datetime) -> bool:
+        """Compare-and-set ``ACCEPTED -> EXECUTING``. False when no row matched."""
+        stmt = (
+            update(ProposalRow)
+            .where(
+                ProposalRow.id == proposal_id,
+                ProposalRow.status == ProposalStatus.ACCEPTED.value,
+            )
+            .values(status=ProposalStatus.EXECUTING.value, updated_at=now.astimezone(UTC))
             .execution_options(synchronize_session=False)
         )
         outcome = cast("CursorResult[Any]", self._session.execute(stmt))

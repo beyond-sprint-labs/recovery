@@ -49,10 +49,10 @@ def _request(client: TestClient, method: str, path: str, **kwargs: Any) -> httpx
     return response
 
 
-def _pending(step: str) -> pytest.MarkDecorator:
+def _pending(step: str, raises: type[BaseException] = MissingDemoRoute) -> pytest.MarkDecorator:
     return pytest.mark.xfail(
         strict=True,
-        raises=MissingDemoRoute,
+        raises=raises,
         reason=f"Pending {step}; remove this marker when the step is implemented",
     )
 
@@ -259,7 +259,7 @@ def test_same_idempotency_key_returns_same_proposal(seeded_client: TestClient) -
     assert [item["action"] for item in feed.json()["items"]] == ["PROPOSAL_BLOCKED"]
 
 
-@_pending("F1-13 approve and customer view")
+# @_pending("F1-13 approve and customer view")
 def test_customer_view_exposes_one_alternative_and_keeps_token(seeded_client: TestClient) -> None:
     _, token = _approved_proposal(seeded_client)
     path = f"{API}/customer/proposals/{token}"
@@ -271,7 +271,7 @@ def test_customer_view_exposes_one_alternative_and_keeps_token(seeded_client: Te
     assert _request(seeded_client, "GET", path).status_code == 200
 
 
-@_pending("F1-12 walking skeleton: respond and mock execution")
+@_pending("F1-12 walking skeleton: respond and mock execution", raises=AssertionError)
 def test_double_accept_executes_once(seeded_client: TestClient) -> None:
     _, token = _approved_proposal(seeded_client)
     path = f"{API}/customer/proposals/{token}/respond"
@@ -285,7 +285,7 @@ def test_double_accept_executes_once(seeded_client: TestClient) -> None:
     assert second.json()["error"]["code"] == "TOKEN_ALREADY_USED"
 
 
-@_pending("F1-12 walking skeleton: complete audit trail")
+@_pending("F1-12 walking skeleton: complete audit trail", raises=AssertionError)
 def test_executed_flow_leaves_the_full_audit_trail(seeded_client: TestClient) -> None:
     proposal_id, token = _approved_proposal(seeded_client)
     responded = _request(
