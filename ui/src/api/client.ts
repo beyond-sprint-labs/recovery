@@ -39,6 +39,57 @@ function delay(min = 300, max = 600): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// In-memory cache for GET requests with TTL (TanStack Query equivalent client-side cache)
+interface CacheEntry<T> {
+  data: T;
+  expiry: number;
+}
+const requestCache = new Map<string, CacheEntry<unknown>>();
+
+async function fetchWithRetry<T>(
+  url: string,
+  options?: RequestInit,
+  retries = 2,
+  cacheTtlMs = 0
+): Promise<T> {
+  const cacheKey = `${options?.method || 'GET'}:${url}`;
+  if (cacheTtlMs > 0 && (!options?.method || options.method === 'GET')) {
+    const cached = requestCache.get(cacheKey);
+    if (cached && cached.expiry > Date.now()) {
+      return cached.data as T;
+    }
+  }
+
+  let attempt = 0;
+  while (attempt <= retries) {
+    try {
+      const res = await fetch(url, options);
+      if (!res.ok) {
+        // Only retry on transient 5xx server errors
+        if (res.status >= 500 && attempt < retries) {
+          attempt++;
+          await new Promise((r) => setTimeout(r, attempt * 500));
+          continue;
+        }
+        throw new Error(`HTTP error ${res.status}`);
+      }
+      const data = await res.json();
+      if (cacheTtlMs > 0) {
+        requestCache.set(cacheKey, { data, expiry: Date.now() + cacheTtlMs });
+      }
+      return data;
+    } catch (err) {
+      if (attempt < retries) {
+        attempt++;
+        await new Promise((r) => setTimeout(r, attempt * 500));
+      } else {
+        throw err;
+      }
+    }
+  }
+  throw new Error(`Failed to fetch from ${url} after ${retries} retries`);
+}
+
 export const apiClient = {
   isMockMode(): boolean {
     return USE_MOCKS;
@@ -56,9 +107,8 @@ export const apiClient = {
       await delay();
       return mockInvoices as Invoice[];
     }
-    const res = await fetch(`${BASE_URL}/invoices`);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    return res.json();
+    // 30-second TTL cache prevents redundant network storms on tab navigation
+    return fetchWithRetry<Invoice[]>(`${BASE_URL}/invoices`, undefined, 2, 30_000);
   },
 
   async createProposal(invoiceId: string, scenario: 'STANDARD' | 'BLOCKED' = 'STANDARD'): Promise<Proposal> {
@@ -70,7 +120,7 @@ export const apiClient = {
       return mockProposalPending as unknown as Proposal;
     }
     const idempotencyKey = `prop-req-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const res = await fetch(`${BASE_URL}/invoices/${invoiceId}/proposals`, {
+    return fetchWithRetry<Proposal>(`${BASE_URL}/invoices/${invoiceId}/proposals`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -81,8 +131,6 @@ export const apiClient = {
         scenario_id: scenario === 'BLOCKED' ? 'scen_blocked_discount' : 'scen_standard_repay',
       }),
     });
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    return res.json();
   },
 
   async approve(proposalId: string, req: ApproveRequest): Promise<ApproveResponse> {
@@ -92,13 +140,11 @@ export const apiClient = {
       res.proposal_id = proposalId;
       return res;
     }
-    const res = await fetch(`${BASE_URL}/proposals/${proposalId}/approve`, {
+    return fetchWithRetry<ApproveResponse>(`${BASE_URL}/proposals/${proposalId}/approve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(req),
     });
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    return res.json();
   },
 
   async getCustomerProposal(token: string): Promise<CustomerProposalView> {
@@ -106,9 +152,8 @@ export const apiClient = {
       await delay();
       return mockCustomerProposal as unknown as CustomerProposalView;
     }
-    const res = await fetch(`${BASE_URL}/customer/proposals/${token}`);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    return res.json();
+    // Cache for 15s to prevent re-querying identical proposal token on tab re-focus
+    return fetchWithRetry<CustomerProposalView>(`${BASE_URL}/customer/proposals/${token}`, undefined, 2, 15_000);
   },
 
   async respondAsCustomer(token: string, req: CustomerRespondRequest): Promise<CustomerRespondResponse> {
@@ -134,13 +179,11 @@ export const apiClient = {
         },
       };
     }
-    const res = await fetch(`${BASE_URL}/customer/proposals/${token}/respond`, {
+    return fetchWithRetry<CustomerRespondResponse>(`${BASE_URL}/customer/proposals/${token}/respond`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(req),
     });
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    return res.json();
   },
 
   async reconcile(proposalId: string): Promise<{ proposal_id: string; status: string }> {
@@ -148,9 +191,9 @@ export const apiClient = {
       await delay();
       return { proposal_id: proposalId, status: 'RECONCILED' };
     }
-    const res = await fetch(`${BASE_URL}/proposals/${proposalId}/reconcile`, { method: 'POST' });
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    return res.json();
+    return fetchWithRetry<{ proposal_id: string; status: string }>(`${BASE_URL}/proposals/${proposalId}/reconcile`, {
+      method: 'POST',
+    });
   },
 
   async getAuditEvents(afterSeq = 0): Promise<AuditEvent[]> {
@@ -164,10 +207,10 @@ export const apiClient = {
       }
       return currentAuditEvents.filter((e) => e.seq > afterSeq);
     }
-    const res = await fetch(`${BASE_URL}/audit-events?after_seq=${afterSeq}`);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const data = await res.json();
-    return data.items || data;
+    const data = await fetchWithRetry<{ items?: AuditEvent[] } | AuditEvent[]>(
+      `${BASE_URL}/audit-events?after_seq=${afterSeq}`
+    );
+    return (data as { items?: AuditEvent[] }).items || (data as AuditEvent[]);
   },
 
   resetMockStream(): void {

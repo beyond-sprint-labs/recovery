@@ -47,7 +47,7 @@ export const AuditPage: React.FC = () => {
     setGridApi(params.api);
   }, []);
 
-  // Poll audit events and apply incremental transaction
+  // Poll audit events and apply incremental transaction with virtual buffer cap
   const pollEvents = useCallback(async () => {
     if (!gridApi) return;
     try {
@@ -70,18 +70,34 @@ export const AuditPage: React.FC = () => {
         }
 
         if (addedRows.length > 0) {
-          gridApi.applyTransaction({ add: addedRows, addIndex: 0 });
+          // Check sliding window cap (e.g. keep at most 5,000 events in memory to prevent DOM bloat)
+          const MAX_GRID_BUFFER = 5000;
+          const currentCount = gridApi.getDisplayedRowCount();
+          if (currentCount + addedRows.length > MAX_GRID_BUFFER) {
+            const overflow = currentCount + addedRows.length - MAX_GRID_BUFFER;
+            const rowsToRemove: AuditEvent[] = [];
+            for (let i = currentCount - 1; i >= currentCount - overflow && i >= 0; i--) {
+              const node = gridApi.getDisplayedRowAtIndex(i);
+              if (node?.data) rowsToRemove.push(node.data);
+            }
+            if (rowsToRemove.length > 0) {
+              gridApi.applyTransactionAsync({ remove: rowsToRemove });
+            }
+          }
+
+          // Use async transaction batching for zero UI stutter
+          gridApi.applyTransactionAsync({ add: addedRows, addIndex: 0 }, (res) => {
+            if (res.add && res.add.length > 0) {
+              const nodes = res.add.filter(Boolean);
+              if (nodes.length > 0) {
+                gridApi.flashCells({ rowNodes: nodes as any });
+              }
+            }
+          });
+
           setEventCount((prev) => prev + addedRows.length);
           if (newBlockedCount > 0) {
             setBlockedAlertCount((prev) => prev + newBlockedCount);
-          }
-
-          // Flash newly inserted cells
-          const rowNodesToFlash = addedRows
-            .map((r) => gridApi.getRowNode(r.event_id))
-            .filter(Boolean);
-          if (rowNodesToFlash.length > 0) {
-            gridApi.flashCells({ rowNodes: rowNodesToFlash as any });
           }
         }
       }
