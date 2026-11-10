@@ -1,0 +1,47 @@
+[
+  {
+    "id": "INV-001",
+    "customer_name": "Acme Corp",
+    "currency": "USD",
+    "balance": "1000.00",
+    "due_date": "2026-10-15",
+    "status": "OVERDUE",
+    "paypal_invoice_id": null
+  },
+  {
+    "id": "INV-002",
+    "customer_name": "Globex Ltd",
+    "currency": "USD",
+    "balance": "2400.00",
+    "due_date": "2026-09-01",
+    "status": "OVERDUE",
+    "paypal_invoice_id": "PP-INV-GLOBEX-01"
+  },
+  {
+    "id": "INV-003",
+    "customer_name": "Initech",
+    "currency": "USD",
+    "balance": "320.50",
+    "due_date": "2026-10-01",
+    "status": "OVERDUE",
+    "paypal_invoice_id": null
+  },
+  {
+    "id": "INV-004",
+    "customer_name": "Umbrella LLC",
+    "currency": "USD",
+    "balance": "15000.00",
+    "due_date": "2026-08-15",
+    "status": "OVERDUE",
+    "paypal_invoice_id": null
+  },
+  {
+    "id": "INV-005",
+    "customer_name": "Stark Industries",
+    "currency": "USD",
+    "balance": "0.00",
+    "due_date": "2026-09-20",
+    "status": "PAID",
+    "paypal_invoice_id": "PP-INV-STARK-77"
+  }
+]

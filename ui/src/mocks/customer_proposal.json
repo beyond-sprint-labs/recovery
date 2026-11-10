@@ -1,0 +1,23 @@
+{
+  "proposal_id": "prop_7f3a9c",
+  "invoice_id": "INV-001",
+  "currency": "USD",
+  "original_balance": "1000.00",
+  "alternative": {
+    "type": "down_payment_installments",
+    "terms": { "down_payment_pct": "30", "installments": 3, "periodic_rate_pct": "1.5" },
+    "amount_due_now": "300.00",
+    "installment_amount": "240.37",
+    "total_paid": "1021.10",
+    "schedule": [
+      { "n": 0, "due_date": "2026-11-11", "amount": "300.00", "principal": "300.00", "interest": "0.00" },
+      { "n": 1, "due_date": "2026-12-11", "amount": "240.37", "principal": "229.87", "interest": "10.50" },
+      { "n": 2, "due_date": "2027-01-11", "amount": "240.37", "principal": "233.32", "interest": "7.05" },
+      { "n": 3, "due_date": "2027-02-11", "amount": "240.36", "principal": "236.81", "interest": "3.55" }
+    ]
+  },
+  "customer_message": "Hi Acme Corp! As agreed, you can pay $300.00 today and 3 monthly installments of $240.37. You will receive a new PayPal invoice right after you accept.",
+  "expires_at": "2026-11-03T15:04:11Z",
+  "status": "PENDING_CUSTOMER",
+  "simulation_notice": "Simulation subject to merchant approval and customer acceptance. Not financial or legal advice."
+}

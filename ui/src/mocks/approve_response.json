@@ -1,0 +1,39 @@
+{
+  "proposal_id": "prop_7f3a9c",
+  "status": "PENDING_CUSTOMER",
+  "approved_alternative": "down_payment_installments",
+  "customer_link": "http://localhost:5173/customer/tok_demo_abc123",
+  "customer_token_expires_at": "2026-11-03T15:04:11Z",
+  "audit_events": [
+    {
+      "event_id": "aud_000020",
+      "seq": 20,
+      "ts": "2026-11-02T15:05:30Z",
+      "actor": { "type": "MERCHANT", "id": "merchant_demo" },
+      "action": "PROPOSAL_APPROVED",
+      "invoice_id": "INV-001",
+      "proposal_id": "prop_7f3a9c",
+      "state_from": "PENDING_MERCHANT",
+      "state_to": "APPROVED",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "Merchant approved down_payment_installments",
+      "paypal_called": false
+    },
+    {
+      "event_id": "aud_000021",
+      "seq": 21,
+      "ts": "2026-11-02T15:05:30Z",
+      "actor": { "type": "SYSTEM", "id": "recovery_service" },
+      "action": "CUSTOMER_LINK_ISSUED",
+      "invoice_id": "INV-001",
+      "proposal_id": "prop_7f3a9c",
+      "state_from": "APPROVED",
+      "state_to": "PENDING_CUSTOMER",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "One-time customer link issued",
+      "paypal_called": false
+    }
+  ]
+}

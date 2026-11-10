@@ -1,0 +1,53 @@
+{
+  "proposal_id": "prop_c41d02",
+  "invoice_id": "INV-001",
+  "status": "BLOCKED",
+  "engine_version": "1.0.0",
+  "currency": "USD",
+  "customer_intent": {
+    "available_now": null,
+    "preferred_installments": null,
+    "requested_discount_pct": "40",
+    "desired_date": null
+  },
+  "alternatives": [],
+  "attempted": [
+    {
+      "type": "settlement_discount",
+      "terms": { "discount_pct": "40" },
+      "computed": { "amount_due_now": "600.00", "merchant_difference_vs_balance": "-400.00" }
+    }
+  ],
+  "blocked_reasons": [
+    {
+      "code": "MAX_DISCOUNT_PCT",
+      "message": "Requested discount 40% exceeds merchant limit 15%",
+      "limit": "15",
+      "attempted": "40",
+      "unit": "pct"
+    }
+  ],
+  "explanation": null,
+  "customer_message_draft": null,
+  "policy_check": {
+    "status": "BLOCKED",
+    "violations": [{ "code": "MAX_DISCOUNT_PCT", "limit": "15", "attempted": "40", "unit": "pct" }]
+  },
+  "text_number_check": { "status": "SKIPPED", "numbers_in_text": [], "unmatched": [] },
+  "paypal_called": false,
+  "audit_event": {
+    "event_id": "aud_000007",
+    "seq": 7,
+    "ts": "2026-11-02T15:04:31Z",
+    "actor": { "type": "SYSTEM", "id": "policy_engine" },
+    "action": "PROPOSAL_BLOCKED",
+    "invoice_id": "INV-001",
+    "proposal_id": "prop_c41d02",
+    "state_from": "DRAFTED",
+    "state_to": "BLOCKED",
+    "severity": "CRITICAL",
+    "rule": { "code": "MAX_DISCOUNT_PCT", "limit": "15", "attempted": "40", "unit": "pct" },
+    "summary": "AI-proposed 40% settlement discount exceeds merchant limit of 15%; PayPal not called",
+    "paypal_called": false
+  }
+}
