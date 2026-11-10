@@ -9,7 +9,7 @@ fresh database from the autouse fixture in `tests/conftest.py`, so no test touch
 
 ```bash
 pytest tests/integration                         # whole folder
-pytest tests/integration/test_flow_demo.py -rxX  # list XFAIL / XPASS(strict) outcomes
+pytest tests/integration/test_flow_demo.py       # full simulated demo flow (F1-12)
 pytest "tests/integration/test_flow_demo.py::test_seeded_app_boots_with_demo_data"
 pytest                                           # full suite, including unit tests
 ruff check . && ruff format --check .            # lint, as in CI
@@ -24,31 +24,27 @@ ruff check . && ruff format --check .            # lint, as in CI
   Tools), keep the working directory at the repository root, then run the `tests/integration`
   folder from the Project view.
 
-## `test_flow_demo.py`
+## `test_flow_demo.py` (F1-12)
 
-Active tests (must pass today): the seeded app boots, the audit feed starts empty, and the
-scenario catalog exposes `S03_exceeds_discount`.
+Runs the complete simulated demo flow through the public HTTP API:
 
-Pending steps use `xfail(strict=True, raises=MissingDemoRoute)`. Only HTTP 404
-from a requested demo endpoint is expected; assertion errors, HTTP 500 and other
-failures remain real test failures. They fail until their card lands; when a step
-starts passing, strict mode turns the unexpected pass into a CI failure. **The PR that implements
-the step deletes the marker.** Never switch a marker to `strict=False`.
+1. **Bootstrapping:** Seeded overdue invoices are opened in the simulated PayPal gateway at startup (`DEMO_MODE=true`).
+2. **Proposal Lifecycle:**
+   - Invoices query (`GET /invoices`) and merchant policy inspection (`GET /policy`).
+   - Proposal creation with input sanitization and deterministic script extraction (S01).
+   - Hard policy gate: out-of-policy requests (S03: 40% discount) transition immediately to `BLOCKED` (HTTP 200).
+   - Idempotency guarantees: mandatory `Idempotency-Key` prevents duplicate proposal generation.
+3. **Merchant & Customer Flow:**
+   - Merchant approval (`POST /proposals/{id}/approve`) emits single-use link with SHA-256 token hashing.
+   - Customer binary view (`GET /customer/proposals/{token}`) and decision (`POST /customer/proposals/{token}/respond`).
+   - Double-acceptance prevention: idempotent CAS guarantees single PayPal execution.
+4. **Execution & Webhook:** Simulated atomic replacement (*draft -> cancel original -> send*) and verified payment confirmation moving proposal to `PAID`.
 
-| Step | Unblocked by |
-| --- | --- |
-| `GET /invoices`, `GET /policy` | F1-13 |
-| Blocked proposal (S03), blocked proposals cannot be approved | F1-13, F1-15 |
-| Strict request body, mandatory `Idempotency-Key`, idempotent creation | F1-13 |
-| Approve and one-alternative customer view | F1-13 |
-| Double ACCEPT executes once, full audit trail | F1-12 (mock execution) |
-
-The within-policy happy path reads its scenario id from `tests/scenarios/scenarios.json`
-(the `S01` entry). If the catalog ids change, update the helper in the test module, not the
-catalog.
+All steps are active and fully verified. The happy path reads its scenario parameters from `tests/scenarios/scenarios.json` (`S01`).
 
 ## Other integration tests
 
-- `test_sqlite_concurrency.py` (F1-16): one writer plus five pollers on SQLite WAL.
-- `test_no_double_charge.py` (F1-18) and `test_webhook_idempotency.py` (F1-19) arrive with
-  their cards.
+- `test_sqlite_concurrency.py` (F1-16): One writer plus five polling readers over SQLite WAL for 30s.
+- `test_no_double_charge.py` (F1-18a): Verification of the atomic PayPal replacement sequence and rollback.
+- `test_f1_18b_flows.py` (F1-18b): Reconcile, orphan draft cleanup, sandbox shortcut, and Invariant 5 verification.
+- `test_webhook_flow.py` (F1-19): End-to-end PayPal webhook receipt, official signature verification, and idempotency.

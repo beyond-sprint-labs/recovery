@@ -1,8 +1,8 @@
-"""Demo-flow integration skeleton (F1-08).
+"""Demo-flow integration tests (F1-08, F1-12).
 
-The active tests prove today that the seeded app boots and that the scenario catalog exposes the
-blocking case. Every API step is marked ``xfail(strict=True)``: the PR that implements a step
-must delete its marker, otherwise CI reports the unexpected pass as a failure.
+The seeded app runs the whole simulated flow through the HTTP API: proposal, policy block,
+merchant approval, customer decision, mocked PayPal execution and the audit trail. Seeded overdue
+invoices are linked to the simulated gateway by the same code the local demo runs at startup.
 """
 
 import json
@@ -17,6 +17,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
 from app.core.db import get_session_factory
+from app.core.demo_bootstrap import link_open_invoices
+from app.core.deps import get_paypal_gateway
 from app.core.models import CustomerRow, InvoiceRow
 from app.seed.loader import seed_database
 
@@ -39,7 +41,7 @@ EXPECTED_AUDIT_TRAIL = [
 
 
 class MissingDemoRoute(AssertionError):
-    """Only an unimplemented route may be an expected failure."""
+    """A demo step reached a route that is not registered."""
 
 
 def _request(client: TestClient, method: str, path: str, **kwargs: Any) -> httpx.Response:
@@ -47,14 +49,6 @@ def _request(client: TestClient, method: str, path: str, **kwargs: Any) -> httpx
     if response.status_code == 404:
         raise MissingDemoRoute(f"{method} {path}: HTTP 404; route not implemented")
     return response
-
-
-def _pending(step: str, raises: type[BaseException] = MissingDemoRoute) -> pytest.MarkDecorator:
-    return pytest.mark.xfail(
-        strict=True,
-        raises=raises,
-        reason=f"Pending {step}; remove this marker when the step is implemented",
-    )
 
 
 def _scenario_ids() -> set[str]:
@@ -118,12 +112,15 @@ def _approved_proposal(client: TestClient) -> tuple[str, str]:
 
 @pytest.fixture
 def seeded_client(client: TestClient) -> TestClient:
-    with get_session_factory().begin() as session:
+    get_paypal_gateway.cache_clear()
+    session_factory = get_session_factory()
+    with session_factory.begin() as session:
         seed_database(session)
+    link_open_invoices(session_factory, get_paypal_gateway())
     return client
 
 
-# --- Active today ---------------------------------------------------------------------------
+# --- Seeded app -------------------------------------------------------------------------
 
 
 def test_seeded_app_boots_with_demo_data(seeded_client: TestClient) -> None:
@@ -148,10 +145,9 @@ def test_scenario_catalog_exposes_the_demo_blocking_case() -> None:
     assert BLOCKED_SCENARIO_ID in _scenario_ids()
 
 
-# --- Pending API steps ----------------------------------------------------------------------
+# --- Seeded API flow ---------------------------------------------------------------
 
 
-# @_pending("F1-13 GET /invoices")
 def test_invoices_list_exposes_seed_without_customer_data(seeded_client: TestClient) -> None:
     response = _request(seeded_client, "GET", f"{API}/invoices")
     assert response.status_code == 200
@@ -164,7 +160,6 @@ def test_invoices_list_exposes_seed_without_customer_data(seeded_client: TestCli
         assert "customer_id" not in item
 
 
-# @_pending("F1-13 GET /policy")
 def test_policy_endpoint_serves_server_side_limits(seeded_client: TestClient) -> None:
     response = _request(seeded_client, "GET", f"{API}/policy")
     assert response.status_code == 200
@@ -176,7 +171,6 @@ def test_policy_endpoint_serves_server_side_limits(seeded_client: TestClient) ->
     )
 
 
-# @_pending("F1-13/F1-15 blocked proposal")
 def test_s03_discount_is_blocked_with_http_200_and_audit_event(seeded_client: TestClient) -> None:
     response = _create_proposal(seeded_client, BLOCKED_SCENARIO_ID, BLOCKED_MESSAGE)
     assert response.status_code == 200
@@ -206,7 +200,6 @@ def test_s03_discount_is_blocked_with_http_200_and_audit_event(seeded_client: Te
     assert [item["event_id"] for item in feed.json()["items"]] == [event["event_id"]]
 
 
-# @_pending("F1-15 blocked proposals are terminal")
 def test_blocked_proposal_cannot_be_approved(seeded_client: TestClient) -> None:
     blocked = _create_proposal(seeded_client, BLOCKED_SCENARIO_ID, BLOCKED_MESSAGE).json()
     response = _request(
@@ -218,7 +211,6 @@ def test_blocked_proposal_cannot_be_approved(seeded_client: TestClient) -> None:
     assert response.status_code == 409
 
 
-# @_pending("F1-13 strict CreateProposalIn")
 def test_policy_in_request_body_is_rejected(seeded_client: TestClient) -> None:
     response = _request(
         seeded_client,
@@ -234,7 +226,6 @@ def test_policy_in_request_body_is_rejected(seeded_client: TestClient) -> None:
     assert response.status_code == 422
 
 
-# @_pending("F1-13 Idempotency-Key is mandatory")
 def test_missing_idempotency_key_is_rejected(seeded_client: TestClient) -> None:
     response = _request(
         seeded_client,
@@ -245,7 +236,6 @@ def test_missing_idempotency_key_is_rejected(seeded_client: TestClient) -> None:
     assert response.status_code == 422
 
 
-# @_pending("F1-13 idempotent proposal creation")
 def test_same_idempotency_key_returns_same_proposal(seeded_client: TestClient) -> None:
     key = str(uuid4())
     first = _create_proposal(seeded_client, BLOCKED_SCENARIO_ID, BLOCKED_MESSAGE, key)
@@ -259,7 +249,6 @@ def test_same_idempotency_key_returns_same_proposal(seeded_client: TestClient) -
     assert [item["action"] for item in feed.json()["items"]] == ["PROPOSAL_BLOCKED"]
 
 
-# @_pending("F1-13 approve and customer view")
 def test_customer_view_exposes_one_alternative_and_keeps_token(seeded_client: TestClient) -> None:
     _, token = _approved_proposal(seeded_client)
     path = f"{API}/customer/proposals/{token}"
@@ -271,7 +260,6 @@ def test_customer_view_exposes_one_alternative_and_keeps_token(seeded_client: Te
     assert _request(seeded_client, "GET", path).status_code == 200
 
 
-@_pending("F1-12 walking skeleton: respond and mock execution", raises=AssertionError)
 def test_double_accept_executes_once(seeded_client: TestClient) -> None:
     _, token = _approved_proposal(seeded_client)
     path = f"{API}/customer/proposals/{token}/respond"
@@ -285,7 +273,6 @@ def test_double_accept_executes_once(seeded_client: TestClient) -> None:
     assert second.json()["error"]["code"] == "TOKEN_ALREADY_USED"
 
 
-@_pending("F1-12 walking skeleton: complete audit trail", raises=AssertionError)
 def test_executed_flow_leaves_the_full_audit_trail(seeded_client: TestClient) -> None:
     proposal_id, token = _approved_proposal(seeded_client)
     responded = _request(
