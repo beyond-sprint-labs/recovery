@@ -24,7 +24,9 @@ def settings(**overrides):
 
 def test_demo_mode_without_api_key():
     factory = get_agent_factory(
-        settings(demo_mode=True, llm_api_key="", llm_provider="", llm_model="")
+        settings(
+            demo_mode=True, agent_mode="scripted", llm_api_key="", llm_provider="", llm_model=""
+        )
     )
 
     binding = factory(None)
@@ -99,6 +101,7 @@ def test_fastapi_demo_startup_without_llm_key(
 
     configured = settings(
         demo_mode=True,
+        agent_mode="scripted",
         llm_api_key="",
         llm_provider="",
         llm_model="",
@@ -124,3 +127,17 @@ def test_production_rejects_demo_mode():
             paypal_mode="real",
             agent_mode="llm",
         )
+
+
+def test_explicit_llm_mode_wins_over_the_demo_preset():
+    """Explicit LLM mode must not silently select the scripted agent."""
+    factory = get_agent_factory(
+        settings(
+            demo_mode=True,
+            agent_mode="llm",
+            llm_api_key="",
+        )
+    )
+
+    with pytest.raises(UpstreamError):
+        factory(None)

@@ -52,15 +52,8 @@ def get_agent_factory(settings: SettingsDep) -> AgentFactory:
     """Build the configured negotiation agent for one request."""
 
     def build(scenario_id: str | None) -> AgentBinding:
-        # Demo mode never requires API credentials or outbound requests.
-        if settings.demo_mode:
-            return AgentBinding(
-                agent=ScriptedAgent(scenario_id),
-                mode="DEMO",
-            )
-
         # The service filters scenario IDs before invoking this factory.
-        if settings.agent_mode == "scripted" or scenario_id is not None:
+        if scenario_id is not None or settings.agent_mode == "scripted":
             return AgentBinding(
                 agent=ScriptedAgent(scenario_id),
                 mode="DEMO",

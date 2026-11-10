@@ -80,6 +80,9 @@ def test_gemini_503_fallback_persists_warn_audit(
         "PROPOSAL_BLOCKED",
     ]
     assert events[0]["severity"] == "WARN"
+    assert events[0]["rule"]["code"] == "LLM_FALLBACK_ACTIVATED"
+    assert events[0]["rule"]["attempted"] == "intent:PROVIDER_UNAVAILABLE"
+    assert events[0]["source"] == "API"
     assert events[0]["actor"]["type"] == "SYSTEM"
     assert events[0]["paypal_called"] is False
     assert events[1]["state_from"] == "DRAFTED"

@@ -88,6 +88,9 @@ APP_ENV=production
 DEMO_MODE=false
 PAYPAL_MODE=real
 AGENT_MODE=llm
+LLM_PROVIDER=gemini
+LLM_MODEL=<GEMINI_MODEL_ID>
+LLM_API_KEY=<GEMINI_API_KEY>
 ALLOW_SCENARIO_ID=true
 DATABASE_URL=sqlite:///./recovery.db
 PUBLIC_BASE_URL=https://<YOUR_DOMAIN_OR_NIP_IO>
@@ -99,6 +102,8 @@ PAYPAL_CLIENT_SECRET=<SANDBOX_CLIENT_SECRET>
 PAYPAL_WEBHOOK_ID=<REGISTERED_WEBHOOK_ID>
 PAYPAL_MERCHANT_EMAIL=<SANDBOX_BUSINESS_EMAIL>
 ```
+
+**LLM startup validation:** With `AGENT_MODE=llm`, the service refuses to start if `LLM_PROVIDER`, `LLM_MODEL`, or `LLM_API_KEY` is missing. If `systemctl status recovery` shows a restart loop, inspect the logs with `journalctl -u recovery` and verify the LLM environment variables. Never commit real API credentials.
 
 ---
 

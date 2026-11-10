@@ -1,6 +1,7 @@
 """Safe deterministic fallback for the real Recovery LLM agent."""
 
 from collections.abc import Mapping
+from typing import Protocol, runtime_checkable
 
 from app.agent.agent import NegotiationAgent, ToolRunner
 from app.agent.errors import InvalidAgentOutputError, LLMUnavailableError
@@ -10,8 +11,16 @@ from app.agent.schemas import AgentOutput
 _RECOVERABLE_ERRORS = (LLMUnavailableError, InvalidAgentOutputError)
 
 
+@runtime_checkable
+class FallbackReporter(Protocol):
+    """An agent that reports deterministic fallback stages and reasons."""
+
+    @property
+    def fallback_reasons(self) -> Mapping[str, str]: ...
+
+
 class FallbackAgent:
-    """Use a scripted agent when the LLM provider cannot produce valid output."""
+    """Use a scripted agent when the LLM cannot produce valid output."""
 
     def __init__(
         self,
@@ -20,13 +29,24 @@ class FallbackAgent:
     ) -> None:
         self._primary = primary
         self._scripted = ScriptedAgent(scenario_id)
-        self.fallback_used = False
-        self.fallback_stages: set[str] = set()
+        self._reasons: dict[str, str] = {}
 
-    def _mark_fallback(self, stage: str) -> None:
-        """Store a safe marker, never provider errors or credentials."""
-        self.fallback_used = True
-        self.fallback_stages.add(stage)
+    @property
+    def fallback_reasons(self) -> Mapping[str, str]:
+        """Return safe reason codes for each fallback stage."""
+        return dict(self._reasons)
+
+    @property
+    def fallback_stages(self) -> frozenset[str]:
+        return frozenset(self._reasons)
+
+    @property
+    def fallback_used(self) -> bool:
+        return bool(self._reasons)
+
+    def _mark_fallback(self, stage: str, error: Exception) -> None:
+        reason = error.reason if isinstance(error, LLMUnavailableError) else "INVALID_OUTPUT"
+        self._reasons[stage] = reason
 
     def run(
         self,
@@ -47,12 +67,12 @@ class FallbackAgent:
                 guarded_tool_runner,
             )
             return AgentOutput.model_validate(output)
-        except _RECOVERABLE_ERRORS:
+        except _RECOVERABLE_ERRORS as error:
             if tool_invoked:
-                # An error after tool execution must not replay the tool.
+                # Never replay an already invoked financial tool.
                 raise
 
-            self._mark_fallback("intent")
+            self._mark_fallback("intent", error)
             return self._scripted.run(
                 sanitized_message,
                 tool_runner,
@@ -62,20 +82,20 @@ class FallbackAgent:
         self,
         engine_result: Mapping[str, object],
     ) -> str:
-        """Use deterministic explanation if LLM generation fails."""
+        """Use a deterministic explanation if LLM generation fails."""
         try:
             return self._primary.explain_alternatives(engine_result)
-        except _RECOVERABLE_ERRORS:
-            self._mark_fallback("explanation")
+        except _RECOVERABLE_ERRORS as error:
+            self._mark_fallback("explanation", error)
             return self._scripted.explain_alternatives(engine_result)
 
     def draft_customer_message(
         self,
         engine_result: Mapping[str, object],
     ) -> str:
-        """Use deterministic customer draft if LLM generation fails."""
+        """Use a deterministic customer draft if LLM generation fails."""
         try:
             return self._primary.draft_customer_message(engine_result)
-        except _RECOVERABLE_ERRORS:
-            self._mark_fallback("customer_message")
+        except _RECOVERABLE_ERRORS as error:
+            self._mark_fallback("customer_message", error)
             return self._scripted.draft_customer_message(engine_result)

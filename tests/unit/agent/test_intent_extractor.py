@@ -101,3 +101,17 @@ def test_extractor_does_not_sanitize_internally():
     extract_intent("Hello   world", client)
 
     assert client.received_message == "Hello   world"
+
+
+def test_intent_system_prompt_carries_the_output_contract():
+    captured = {}
+
+    class CapturingClient(FakeLLMClient):
+        def complete(self, system, user, schema):
+            captured["system"] = system
+            return super().complete(system, user, schema)
+
+    extract_intent("Hello", CapturingClient(CustomerIntent()))
+
+    assert "No tools are available" in captured["system"]
+    assert '"available_now"' in captured["system"]

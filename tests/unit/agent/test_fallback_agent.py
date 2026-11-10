@@ -135,3 +135,26 @@ def test_unexpected_text_error_is_not_hidden():
         agent.explain_alternatives({"alternatives": []})
 
     assert agent.fallback_used is False
+
+
+def test_fallback_reason_codes_are_recorded_per_stage():
+    """Record safe reason codes for each fallback stage."""
+    from unittest.mock import Mock
+
+    primary = Mock()
+    primary.run.side_effect = LLMUnavailableError(
+        "rejected",
+        reason="PROVIDER_REJECTED",
+    )
+    primary.explain_alternatives.side_effect = InvalidAgentOutputError("bad output")
+
+    agent = FallbackAgent(primary)
+    agent._scripted.explain_alternatives = Mock(return_value="Approved alternatives.")
+
+    agent.run("Payment request", lambda _: None)
+    agent.explain_alternatives({"alternatives": []})
+
+    assert agent.fallback_reasons == {
+        "intent": "PROVIDER_REJECTED",
+        "explanation": "INVALID_OUTPUT",
+    }

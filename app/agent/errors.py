@@ -14,8 +14,18 @@ class AgentInputError(AgentError):
 
 
 class LLMUnavailableError(AgentError):
-    """The LLM provider is temporarily unavailable.
+    """The LLM provider cannot serve this request.
 
-    Used for retryable transport failures, timeouts, or quota limits.
-    It must not be used for invalid model output or finance errors.
+    The reason is a fixed, safe audit code:
+    PROVIDER_UNAVAILABLE, PROVIDER_REJECTED, or BUDGET_EXHAUSTED.
+    It must never contain credentials or customer information.
     """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        reason: str = "PROVIDER_UNAVAILABLE",
+    ) -> None:
+        super().__init__(message)
+        self.reason = reason

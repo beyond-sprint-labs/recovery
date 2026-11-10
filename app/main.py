@@ -23,7 +23,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Validate the active LLM configuration before serving requests."""
     settings = get_settings()
 
-    if not settings.demo_mode and settings.agent_mode == "llm":
+    if settings.agent_mode == "llm":
         from app.core.deps import get_agent_factory
 
         get_agent_factory(settings)(None)
