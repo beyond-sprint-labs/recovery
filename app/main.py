@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import audit, customer, health, invoices, proposals, webhooks
 from app.core.config import ENGINE_VERSION, get_settings
 from app.core.db import Base, get_engine
+from app.core.demo_bootstrap import bootstrap_demo
 from app.core.errors import register_exception_handlers
 
 API_PREFIX: Final = "/api/v1"
@@ -21,6 +22,7 @@ CORS_ALLOWED_METHODS: Final = ["GET", "POST", "OPTIONS"]
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     Base.metadata.create_all(get_engine())
+    bootstrap_demo(get_settings())
     yield
 
 

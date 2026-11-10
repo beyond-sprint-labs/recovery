@@ -59,6 +59,8 @@ the returned ID. For Sandbox delivery configure an actual test buyer through
 `PAYPAL_SANDBOX_BUYER_EMAIL`, which the real gateway uses to override the seed email.
 Never treat a fabricated seed ID as a real PayPal invoice.
 
+In a local demo run (`APP_ENV=local`, `DEMO_MODE=true`, `PAYPAL_MODE=mock`) the application seeds the database on startup and opens one original invoice per overdue seed invoice in the simulated gateway, storing its id in `paypal_invoice_id`. The mock keeps invoices in memory, so the ids are recreated on every start. Other environments, including the test suite, are never bootstrapped.
+
 ## Persistence and downstream tasks
 
 This task owns `CustomerRow` and `InvoiceRow` on the shared `Base`. `InvoiceRow.customer_id`
@@ -66,8 +68,7 @@ is `NOT NULL` with a foreign key to `customers.id`, so every invoice resolves to
 email. F1-13 adds `ProposalRow` to the same module and must not declare a second `invoices`
 table. The public `Invoice` response is unchanged and never exposes `customer_id` or the email.
 
-`tests/integration/test_flow_demo.py` documents the demo flow against the HTTP contract; its
-pending steps are `xfail(strict=True)` until their cards land (see `tests/integration/README.md`).
+`tests/integration/test_flow_demo.py` runs the demo flow against the HTTP contract with the simulated PayPal gateway.
 
 This task supplies data and persistence setup. Invoice HTTP endpoints, proposal lifecycle
 behavior and execution remain the responsibility of their service tasks.
