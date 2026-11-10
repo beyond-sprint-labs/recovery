@@ -13,7 +13,7 @@ from app.core.states import (
 # Independent copy of the ROADMAP section 4.5 table. Do NOT import it from app.core.states.
 EXPECTED: dict[str, set[str]] = {
     "DRAFTED": {"PENDING_MERCHANT", "BLOCKED"},
-    "PENDING_MERCHANT": {"APPROVED", "REJECTED"},
+    "PENDING_MERCHANT": {"APPROVED", "REJECTED", "BLOCKED"},
     "APPROVED": {"PENDING_CUSTOMER"},
     "PENDING_CUSTOMER": {"ACCEPTED", "DECLINED", "EXPIRED"},
     "ACCEPTED": {"EXECUTING"},

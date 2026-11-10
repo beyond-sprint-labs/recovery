@@ -19,12 +19,13 @@ import hashlib
 import json
 import logging
 import re
+import secrets
 import uuid
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
-from decimal import ROUND_HALF_UP, Decimal
-from typing import Final, Protocol, cast
+from datetime import UTC, date, datetime, timedelta
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from typing import Final, NoReturn, Protocol, cast
 
 from pydantic import ValidationError
 
@@ -32,21 +33,37 @@ from app.agent.agent import ToolRunner
 from app.agent.errors import AgentError, AgentInputError
 from app.agent.schemas import AgentOutput
 from app.core.config import Settings
-from app.core.errors import ConflictError, NotFoundError, UnprocessableError
+from app.core.errors import (
+    AppError,
+    ConflictError,
+    NotFoundError,
+    UnprocessableError,
+    UpstreamError,
+)
 from app.core.schemas import (
     Actor,
     Alternative,
+    AlternativeType,
+    ApproveIn,
+    ApproveOut,
     AttemptedAlternative,
     AttemptedComputed,
     AuditEvent,
     CreateProposalIn,
     Currency,
+    CustomerAlternativeView,
     CustomerIntent,
+    CustomerProposalView,
     Invoice,
     InvoiceStatus,
+    PayPalExecution,
     Policy,
     PolicyCheck,
     ProposalOut,
+    ProposalStatusOut,
+    RejectIn,
+    RespondIn,
+    RespondOut,
     RuleHit,
     Severity,
     TextNumberCheck,
@@ -54,7 +71,16 @@ from app.core.schemas import (
 from app.core.states import ProposalStatus, assert_transition
 from app.finance import FinanceError, calculate_alternatives
 from app.finance.engine import ENGINE_VERSION
-from app.repositories.invoices_repo import InvoicesRepo
+from app.finance.policy import validate as validate_policy
+from app.paypal.alternatives import (
+    AlternativeMappingError,
+    build_replacement_request,
+    confirmation_label,
+    select_approved_alternative,
+    simulation_notice,
+)
+from app.paypal.gateway import PayPalError, PayPalGateway, PayPalInvoiceState
+from app.repositories.invoices_repo import InvoicesRepo, PaymentContext
 from app.repositories.proposals_repo import (
     NewProposal,
     ProposalInsertConflictError,
@@ -62,7 +88,17 @@ from app.repositories.proposals_repo import (
     ProposalResult,
     ProposalsRepo,
 )
+from app.services.approval_templates import (
+    build_final_message_allowed_numbers,
+    render_customer_message,
+)
 from app.services.audit_service import MAX_PAGE_LIMIT, AuditService
+from app.services.execution_service import (
+    ExecutionResult,
+    ExecutionService,
+    ExecutionStateError,
+    is_paid_in_full,
+)
 from app.services.input_sanitizer import sanitize_customer_message
 from app.services.text_guard import AllowedNumbers, check_text_numbers
 
@@ -79,6 +115,29 @@ MAX_DOWN_PAYMENT_PCT: Final = Decimal("99")
 
 _PCT_QUANTUM: Final = Decimal("0.0001")
 _IDEMPOTENCY_KEY_RE: Final = re.compile(r"[A-Za-z0-9_.:-]{1,128}")
+# Lazy reconciliation asks PayPal at most once per interval and proposal (ROADMAP 4.5).
+LAZY_RECONCILE_INTERVAL: Final = timedelta(seconds=10)
+_MONEY_QUANTUM: Final = Decimal("0.01")
+
+_MERCHANT_ACTOR: Final = Actor(type="MERCHANT", id="merchant_demo")
+_CUSTOMER_ACTOR: Final = Actor(type="CUSTOMER", id="customer_demo")
+_CUSTOMER_TOKEN_RE: Final = re.compile(r"[A-Za-z0-9_-]{16,128}")
+CUSTOMER_SIMULATION_NOTICE: Final = (
+    "Simulation subject to merchant approval and customer acceptance. "
+    "Not financial or legal advice."
+)
+_APPROVAL_LABELS: Final = {
+    AlternativeType.SETTLEMENT_DISCOUNT: "settlement discount",
+    AlternativeType.DOWN_PAYMENT_INSTALLMENTS: "down payment + installments",
+}
+
+
+def _format_ttl(minutes: int) -> str:
+    """Human-readable token lifetime for the audit trail ("24 hours", "90 minutes")."""
+    if minutes % 60 == 0:
+        hours = minutes // 60
+        return f"{hours} hour" if hours == 1 else f"{hours} hours"
+    return f"{minutes} minutes"
 
 
 # --- ports ------------------------------------------------------------------------------
@@ -108,6 +167,8 @@ class AgentBinding:
 
 
 AgentFactory = Callable[[str | None], AgentBinding]
+# Builds ``ExecutionService`` on demand: PayPal is only touched by the methods that need it.
+ExecutionProvider = Callable[[], ExecutionService]
 
 
 def _utc_now() -> datetime:
@@ -403,6 +464,8 @@ def _build_out(
     currency: str,
     result: ProposalResult,
     audit_event: AuditEvent | None,
+    approved_alternative: AlternativeType | None = None,
+    paypal: PayPalExecution | None = None,
 ) -> ProposalOut:
     return ProposalOut(
         proposal_id=proposal_id,
@@ -419,6 +482,8 @@ def _build_out(
         policy_check=result.policy_check,
         text_number_check=result.text_number_check,
         paypal_called=result.paypal_called,
+        approved_alternative=approved_alternative,
+        paypal=paypal,
         audit_event=audit_event,
     )
 
@@ -472,6 +537,7 @@ class RecoveryService:
         agent_factory: AgentFactory,
         settings: Settings,
         clock: Callable[[], datetime] = _utc_now,
+        execution_provider: ExecutionProvider | None = None,
     ) -> None:
         self._invoices = invoices
         self._proposals = proposals
@@ -480,6 +546,7 @@ class RecoveryService:
         self._agent_factory = agent_factory
         self._settings = settings
         self._clock = clock
+        self._execution_provider = execution_provider
 
     # --- read-only queries -------------------------------------------------------------------
 
@@ -496,13 +563,13 @@ class RecoveryService:
         return policy_from_settings(self._settings)
 
     def get_proposal(self, proposal_id: str) -> ProposalOut:
-        # Slice 3 hook: when the status is EXECUTED and last_paypal_check_at is older than
-        # 10 s, reconcile lazily with PayPal here. No Slice 1 state can reach EXECUTED.
         record = self._proposals.get(proposal_id)
         if record is None:
             raise NotFoundError("PROPOSAL_NOT_FOUND", "Proposal not found")
         if record.status is ProposalStatus.DRAFTED or record.result is None:
             raise ConflictError("PROPOSAL_IN_PROGRESS", "The proposal is still being drafted")
+        if self._lazy_reconcile(record):
+            record = self._require_record(proposal_id)
         return self._out_from_record(record)
 
     # --- create ---------------------------------------------------------------------------------
@@ -589,6 +656,730 @@ class RecoveryService:
             as_of=now.date(),
         )
         return self._finalize(proposal_id=proposal_id, invoice=invoice, decision=decision)
+
+    # --- merchant decision: approve / reject (F1-13 slice 2) ------------------------------
+
+    def approve_proposal(self, proposal_id: str, body: ApproveIn) -> ApproveOut:
+        """Approve ONE alternative and issue the single-use customer link (DEC-28).
+
+        Everything happens in one transaction with no outbound call: a compare-and-set
+        ``PENDING_MERCHANT -> PENDING_CUSTOMER`` plus the ``PROPOSAL_APPROVED`` and
+        ``CUSTOMER_LINK_ISSUED`` audit events. The clear token exists only in the returned
+        link; the database keeps its SHA-256 hash.
+        """
+        record = self._require_record(proposal_id)
+        self._require_pending_merchant(record, "approved")
+        alternative = self._offered_alternative(record, body.alternative_type)
+        now = self._clock()
+
+        message = render_customer_message(invoice_id=record.invoice_id, alternative=alternative)
+        check = check_text_numbers(
+            [message],
+            build_final_message_allowed_numbers(
+                alternative=alternative, invoice_id=record.invoice_id
+            ),
+        )
+        if check.status != "PASSED":
+            self._block_final_message(record=record, check=check, now=now)
+
+        assert_transition(ProposalStatus.PENDING_MERCHANT, ProposalStatus.APPROVED)
+        assert_transition(ProposalStatus.APPROVED, ProposalStatus.PENDING_CUSTOMER)
+
+        token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        ttl_minutes = self._settings.customer_token_ttl_min
+        expires_at = now + timedelta(minutes=ttl_minutes)
+        note = self._clean_note(body.note)
+        label = _APPROVAL_LABELS[body.alternative_type]
+
+        try:
+            if not self._proposals.approve_pending_merchant(
+                proposal_id=proposal_id,
+                approved_alternative=body.alternative_type,
+                token_hash=token_hash,
+                token_expires_at=expires_at,
+                customer_message_final=message,
+                now=now,
+            ):
+                raise ConflictError(
+                    "PROPOSAL_STATE_CONFLICT",
+                    "The proposal is no longer pending merchant approval",
+                )
+            approved_event = self._audit.record(
+                actor=_MERCHANT_ACTOR,
+                action="PROPOSAL_APPROVED",
+                severity=Severity.INFO,
+                summary=self._with_note(f"Merchant approved the {label} option", note),
+                invoice_id=record.invoice_id,
+                proposal_id=proposal_id,
+                state_from=ProposalStatus.PENDING_MERCHANT,
+                state_to=ProposalStatus.APPROVED,
+                paypal_called=False,
+            )
+            issued_event = self._audit.record(
+                actor=Actor(type="SYSTEM", id="recovery_service"),
+                action="CUSTOMER_LINK_ISSUED",
+                severity=Severity.INFO,
+                summary=(f"Single-use customer link issued; expires in {_format_ttl(ttl_minutes)}"),
+                invoice_id=record.invoice_id,
+                proposal_id=proposal_id,
+                state_from=ProposalStatus.APPROVED,
+                state_to=ProposalStatus.PENDING_CUSTOMER,
+                paypal_called=False,
+            )
+            self._uow.commit()
+        except Exception:
+            self._uow.rollback()
+            raise
+
+        base_url = self._settings.public_base_url.rstrip("/")
+        return ApproveOut(
+            proposal_id=proposal_id,
+            status=ProposalStatus.PENDING_CUSTOMER,
+            approved_alternative=body.alternative_type,
+            customer_link=f"{base_url}/customer/{token}",
+            customer_token_expires_at=expires_at,
+            audit_events=[approved_event, issued_event],
+        )
+
+    def reject_proposal(self, proposal_id: str, body: RejectIn) -> ProposalStatusOut:
+        """Compare-and-set ``PENDING_MERCHANT -> REJECTED`` with its audit event."""
+        record = self._require_record(proposal_id)
+        self._require_pending_merchant(record, "rejected")
+        assert_transition(ProposalStatus.PENDING_MERCHANT, ProposalStatus.REJECTED)
+        note = self._clean_note(body.note)
+
+        try:
+            if not self._proposals.reject_pending_merchant(
+                proposal_id=proposal_id, now=self._clock()
+            ):
+                raise ConflictError(
+                    "PROPOSAL_STATE_CONFLICT",
+                    "The proposal is no longer pending merchant approval",
+                )
+            event = self._audit.record(
+                actor=_MERCHANT_ACTOR,
+                action="PROPOSAL_REJECTED",
+                severity=Severity.INFO,
+                summary=self._with_note("Merchant rejected the proposal", note),
+                invoice_id=record.invoice_id,
+                proposal_id=proposal_id,
+                state_from=ProposalStatus.PENDING_MERCHANT,
+                state_to=ProposalStatus.REJECTED,
+                paypal_called=False,
+            )
+            self._uow.commit()
+        except Exception:
+            self._uow.rollback()
+            raise
+        return ProposalStatusOut(
+            proposal_id=proposal_id, status=ProposalStatus.REJECTED, audit_events=[event]
+        )
+
+    @staticmethod
+    def _require_pending_merchant(record: ProposalRecord, verb: str) -> None:
+        if record.status is not ProposalStatus.PENDING_MERCHANT:
+            raise ConflictError(
+                "PROPOSAL_NOT_PENDING_MERCHANT",
+                f"Only proposals in PENDING_MERCHANT can be {verb}; "
+                f"current status is {record.status.value}",
+            )
+
+    def _offered_alternative(
+        self, record: ProposalRecord, alternative_type: AlternativeType
+    ) -> Alternative:
+        """The chosen alternative, re-checked against the CURRENT server policy (fail closed)."""
+        if record.result is None:
+            raise ConflictError("PROPOSAL_IN_PROGRESS", "The proposal is still being drafted")
+        chosen = next(
+            (alt for alt in record.result.alternatives if alt.type == alternative_type), None
+        )
+        if chosen is None or not chosen.policy_ok or chosen.violations:
+            raise UnprocessableError(
+                "ALTERNATIVE_NOT_OFFERED",
+                "The chosen alternative was not offered within policy",
+            )
+        try:
+            violations = validate_policy(chosen.terms.model_dump(), self.get_policy().model_dump())
+        except FinanceError as err:
+            raise UnprocessableError(
+                "ALTERNATIVE_NOT_OFFERED",
+                "The chosen alternative could not be validated against the merchant policy",
+            ) from err
+        if violations:
+            raise UnprocessableError(
+                "ALTERNATIVE_NOT_OFFERED",
+                "The chosen alternative no longer complies with the merchant policy",
+            )
+        return chosen
+
+    def _block_final_message(
+        self, *, record: ProposalRecord, check: TextNumberCheck, now: datetime
+    ) -> NoReturn:
+        """Persist ``PENDING_MERCHANT -> BLOCKED(TEXT_NUMBER_MISMATCH)`` and answer 409 (AC12)."""
+        assert_transition(ProposalStatus.PENDING_MERCHANT, ProposalStatus.BLOCKED)
+        shown = ", ".join(check.unmatched)[:200]
+        reason = RuleHit(
+            code="TEXT_NUMBER_MISMATCH",
+            attempted=shown or None,
+            unit="figures",
+            message="The approval message contains figures the finance engine did not produce",
+        )
+        try:
+            if not self._proposals.block_pending_merchant(
+                proposal_id=record.proposal_id, reasons=[reason], text_check=check, now=now
+            ):
+                raise ConflictError(
+                    "PROPOSAL_STATE_CONFLICT",
+                    "The proposal is no longer pending merchant approval",
+                )
+            self._audit.record(
+                actor=Actor(type="SYSTEM", id="text_guard"),
+                action="PROPOSAL_BLOCKED",
+                severity=Severity.CRITICAL,
+                summary=(
+                    "Approval message contains figures not produced by the finance engine "
+                    f"({shown}); PayPal not called"
+                ),
+                invoice_id=record.invoice_id,
+                proposal_id=record.proposal_id,
+                state_from=ProposalStatus.PENDING_MERCHANT,
+                state_to=ProposalStatus.BLOCKED,
+                rule=reason,
+                paypal_called=False,
+            )
+            self._uow.commit()
+        except Exception:
+            self._uow.rollback()
+            raise
+        raise ConflictError(
+            "TEXT_NUMBER_MISMATCH",
+            "The approval message failed the text-number check; the proposal is now blocked",
+        )
+
+    @staticmethod
+    def _clean_note(note: str | None) -> str | None:
+        """Merchant notes are free text that lands in the audit trail: strip hidden characters."""
+        if note is None:
+            return None
+        return sanitize_customer_message(note).text or None
+
+    @staticmethod
+    def _with_note(summary: str, note: str | None) -> str:
+        return f"{summary}. Merchant note: {note}" if note else summary
+
+    # --- customer portal: view and binary response (F1-13 slice 3) -------------------------
+
+    def get_customer_proposal(self, token: str) -> CustomerProposalView:
+        """What the customer sees: ONE alternative, built field by field (DEC-28).
+
+        Never consumes the token. The only write is the lazy ``EXPIRED`` transition.
+        """
+        record = self._load_customer_record(token)
+        alternative = self._approved_alternative(record)
+        message = record.customer_message_final
+        expires_at = record.customer_token_expires_at
+        if not message or expires_at is None:
+            raise ConflictError(
+                "CUSTOMER_VIEW_UNAVAILABLE", "The proposal has no approved customer message"
+            )
+        invoice = self.get_invoice(record.invoice_id)
+        notice = CUSTOMER_SIMULATION_NOTICE
+        extra_notice = simulation_notice(alternative.type)
+        if extra_notice:
+            notice = f"{notice} {extra_notice}"
+        return CustomerProposalView(
+            proposal_id=record.proposal_id,
+            invoice_id=record.invoice_id,
+            currency=cast(Currency, record.currency),
+            original_balance=invoice.balance,
+            alternative=CustomerAlternativeView(
+                type=alternative.type,
+                terms=alternative.terms,
+                amount_due_now=alternative.amount_due_now,
+                installment_amount=alternative.installment_amount,
+                total_paid=alternative.total_paid,
+                schedule=alternative.schedule,
+            ),
+            customer_message=message,
+            expires_at=expires_at,
+            status=record.status,
+            simulation_notice=notice,
+        )
+
+    def respond_to_proposal(self, token: str, body: RespondIn) -> RespondOut:
+        """Binary customer decision. One CAS consumes the token and moves the state.
+
+        ``ACCEPT`` checks every execution prerequisite BEFORE consuming the token, so a
+        misconfigured invoice never burns the link. The PayPal sequence runs with no
+        transaction open (invariant 5).
+        """
+        record = self._load_customer_record(token)
+        proposal_id = record.proposal_id
+        accepted = body.decision == "ACCEPT"
+        if accepted:
+            self._assert_executable(record)
+        target = ProposalStatus.ACCEPTED if accepted else ProposalStatus.DECLINED
+        assert_transition(ProposalStatus.PENDING_CUSTOMER, target)
+
+        last_seq = self._last_audit_seq(proposal_id)
+        now = self._clock()
+        consumed = False
+        try:
+            consumed = self._proposals.consume_customer_token(
+                token_hash=self._hash_customer_token(token), status=target, now=now
+            )
+            if consumed:
+                self._audit.record(
+                    actor=_CUSTOMER_ACTOR,
+                    action="CUSTOMER_ACCEPTED" if accepted else "CUSTOMER_DECLINED",
+                    severity=Severity.INFO,
+                    summary=(
+                        "Customer accepted the pre-approved option"
+                        if accepted
+                        else "Customer declined the pre-approved option; PayPal not called"
+                    ),
+                    invoice_id=record.invoice_id,
+                    proposal_id=proposal_id,
+                    state_from=ProposalStatus.PENDING_CUSTOMER,
+                    state_to=target,
+                    paypal_called=False,
+                )
+                self._uow.commit()
+            else:
+                self._uow.rollback()
+        except Exception:
+            self._uow.rollback()
+            raise
+        if not consumed:
+            self._lost_token_race(token)
+
+        if not accepted:
+            return RespondOut(
+                proposal_id=proposal_id,
+                status=ProposalStatus.DECLINED,
+                paypal=None,
+                audit_events=self._events_since(proposal_id, last_seq),
+            )
+
+        self._start_execution(record)
+        try:
+            result = self.run_execution(proposal_id)
+        except AppError:
+            raise
+        except Exception as exc:
+            logger.error("Execution interrupted for proposal %s", proposal_id, exc_info=exc)
+            raise ConflictError(
+                "EXECUTION_INTERRUPTED",
+                "The execution was interrupted; check the proposal status before retrying",
+            ) from exc
+        return RespondOut(
+            proposal_id=proposal_id,
+            status=result.status,
+            paypal=PayPalExecution(
+                new_invoice_id=result.new_invoice_id,
+                original_invoice_id=result.original_invoice_id,
+                steps=list(result.steps),
+            ),
+            audit_events=self._events_since(proposal_id, last_seq),
+        )
+
+    @staticmethod
+    def _hash_customer_token(token: str) -> str:
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+    def _load_customer_record(self, token: str) -> ProposalRecord:
+        """Resolve a token by its hash and apply the 404 / 409 rules. Fails closed."""
+        if _CUSTOMER_TOKEN_RE.fullmatch(token) is None:
+            raise NotFoundError("TOKEN_NOT_FOUND", "Customer link not found")
+        record = self._proposals.get_by_token_hash(self._hash_customer_token(token))
+        if record is None:
+            raise NotFoundError("TOKEN_NOT_FOUND", "Customer link not found")
+        if record.customer_token_used_at is not None:
+            raise ConflictError("TOKEN_ALREADY_USED", "This customer link was already used")
+        if record.status is ProposalStatus.EXPIRED:
+            raise ConflictError("TOKEN_EXPIRED", "This customer link has expired")
+        expires_at = record.customer_token_expires_at
+        if record.status is not ProposalStatus.PENDING_CUSTOMER or expires_at is None:
+            raise ConflictError(
+                "PROPOSAL_NOT_PENDING_CUSTOMER",
+                f"The proposal is not awaiting the customer; current status is "
+                f"{record.status.value}",
+            )
+        if expires_at <= self._clock():
+            self._expire_customer_link(record)
+            raise ConflictError("TOKEN_EXPIRED", "This customer link has expired")
+        return record
+
+    def _lost_token_race(self, token: str) -> NoReturn:
+        """The consuming CAS matched nothing: re-read and report why (never a silent success)."""
+        self._load_customer_record(token)
+        raise ConflictError(
+            "TOKEN_STATE_CONFLICT", "The customer link could not be consumed; retry the request"
+        )
+
+    def _expire_customer_link(self, record: ProposalRecord) -> None:
+        """Lazy ``PENDING_CUSTOMER -> EXPIRED`` with its audit event, in one transaction."""
+        assert_transition(ProposalStatus.PENDING_CUSTOMER, ProposalStatus.EXPIRED)
+        try:
+            if self._proposals.expire_pending_customer(
+                proposal_id=record.proposal_id, now=self._clock()
+            ):
+                self._audit.record(
+                    actor=Actor(type="SYSTEM", id="recovery_service"),
+                    action="CUSTOMER_LINK_EXPIRED",
+                    severity=Severity.INFO,
+                    summary="Customer link expired before the customer responded",
+                    invoice_id=record.invoice_id,
+                    proposal_id=record.proposal_id,
+                    state_from=ProposalStatus.PENDING_CUSTOMER,
+                    state_to=ProposalStatus.EXPIRED,
+                    paypal_called=False,
+                )
+                self._uow.commit()
+            else:
+                self._uow.rollback()
+        except Exception:
+            self._uow.rollback()
+            raise
+
+    def _assert_executable(self, record: ProposalRecord) -> None:
+        """Every prerequisite of ``run_execution``, checked while the token is still unused."""
+        self._execution()
+        alternative = self._approved_alternative(record)
+        context = self._payment_context(record)
+        self._original_paypal_id(context)
+        try:
+            build_replacement_request(
+                proposal_id=record.proposal_id,
+                alternative=alternative,
+                recipient_email=context.recipient_email,
+            )
+        except AlternativeMappingError as err:
+            raise UnprocessableError(err.code, err.message) from err
+
+    def _start_execution(self, record: ProposalRecord) -> None:
+        """Compare-and-set ``ACCEPTED -> EXECUTING`` with ``EXECUTION_STARTED``, committed."""
+        assert_transition(ProposalStatus.ACCEPTED, ProposalStatus.EXECUTING)
+        try:
+            if not self._proposals.begin_execution(
+                proposal_id=record.proposal_id, now=self._clock()
+            ):
+                raise ConflictError(
+                    "PROPOSAL_STATE_CONFLICT", "The proposal is no longer in ACCEPTED state"
+                )
+            self._audit.record(
+                actor=Actor(type="SYSTEM", id="recovery_service"),
+                action="EXECUTION_STARTED",
+                severity=Severity.INFO,
+                summary="Execution started; replacing the original invoice in PayPal",
+                invoice_id=record.invoice_id,
+                proposal_id=record.proposal_id,
+                state_from=ProposalStatus.ACCEPTED,
+                state_to=ProposalStatus.EXECUTING,
+                paypal_called=False,
+            )
+            self._uow.commit()
+        except Exception:
+            self._uow.rollback()
+            raise
+
+    # --- PayPal execution, reconciliation and payment confirmation (F1-18b) ---------------
+
+    def run_execution(self, proposal_id: str) -> ExecutionResult:
+        """Run the anti-double-charge replacement for a proposal already in EXECUTING.
+
+        Slice 3 hook: ``respond`` commits ACCEPTED -> EXECUTING and then calls this. The read
+        transaction is closed before any PayPal call (invariant 5); every step is persisted by
+        the journal in its own transaction.
+        """
+        execution = self._execution()
+        record = self._require_record(proposal_id)
+        if record.status is not ProposalStatus.EXECUTING:
+            raise ConflictError("PROPOSAL_NOT_EXECUTING", "The proposal is not in EXECUTING state")
+        alternative = self._approved_alternative(record)
+        context = self._payment_context(record)
+        original_invoice_id = self._original_paypal_id(context)
+        try:
+            request = build_replacement_request(
+                proposal_id=record.proposal_id,
+                alternative=alternative,
+                recipient_email=context.recipient_email,
+            )
+        except AlternativeMappingError as err:
+            raise UnprocessableError(err.code, err.message) from err
+        request_id = (
+            record.execution.request_id if record.execution else f"req_{record.proposal_id}"
+        )
+
+        self._uow.rollback()  # invariant 5: no transaction open during PayPal calls
+        try:
+            return execution.execute_replacement(
+                proposal_id=record.proposal_id,
+                original_invoice_id=original_invoice_id,
+                new_invoice_number=request.invoice_number,
+                new_amount=request.amount,
+                recipient_email=context.recipient_email,
+                request_id=request_id,
+            )
+        except ExecutionStateError as err:
+            raise ConflictError("EXECUTION_STATE_CONFLICT", str(err)) from err
+
+    def reconcile_proposal(self, proposal_id: str) -> ProposalStatusOut:
+        """Resume NEEDS_RECONCILIATION from live PayPal state. Never cancels (DEC-27).
+
+        A FAILED proposal that still owns an orphan draft is also accepted: only that draft is
+        deleted and the proposal stays FAILED.
+        """
+        execution = self._execution()
+        record = self._require_record(proposal_id)
+        has_orphan_draft = (
+            record.status is ProposalStatus.FAILED
+            and record.execution is not None
+            and record.execution.draft_id is not None
+        )
+        if record.status is not ProposalStatus.NEEDS_RECONCILIATION and not has_orphan_draft:
+            raise ConflictError(
+                "PROPOSAL_NOT_RECONCILABLE",
+                "Only proposals in NEEDS_RECONCILIATION, or FAILED with an orphan draft, "
+                "can be reconciled",
+            )
+        original_invoice_id = self._original_paypal_id(self._payment_context(record))
+        last_seq = self._last_audit_seq(proposal_id)
+
+        self._uow.rollback()  # invariant 5: no transaction open during PayPal calls
+        try:
+            if has_orphan_draft:
+                result = execution.cleanup_orphan_draft(
+                    proposal_id=proposal_id, original_invoice_id=original_invoice_id
+                )
+            else:
+                result = execution.reconcile(
+                    proposal_id=proposal_id, original_invoice_id=original_invoice_id
+                )
+        except ExecutionStateError as err:
+            raise ConflictError("EXECUTION_STATE_CONFLICT", str(err)) from err
+        return ProposalStatusOut(
+            proposal_id=proposal_id,
+            status=result.status,
+            audit_events=self._events_since(proposal_id, last_seq),
+        )
+
+    def record_sandbox_payment(self, proposal_id: str) -> ProposalStatusOut:
+        """Sandbox-only shortcut: record the payment in PayPal, then confirm it.
+
+        The amount comes from the persisted approved alternative, never from the request. The
+        move to PAID uses the same compare-and-set as the webhook, so whoever arrives second
+        is a harmless no-op.
+        """
+        if not self._sandbox_shortcut_enabled():
+            raise NotFoundError(
+                "SANDBOX_SHORTCUT_DISABLED", "The Sandbox payment shortcut is not enabled"
+            )
+        execution = self._execution()
+        record = self._require_record(proposal_id)
+        if record.status is not ProposalStatus.EXECUTED:
+            raise ConflictError(
+                "PROPOSAL_NOT_EXECUTED", "Payments can only be recorded for an EXECUTED proposal"
+            )
+        draft_id, alternative = self._payment_target(record)
+        expected = alternative.amount_due_now
+        last_seq = self._last_audit_seq(proposal_id)
+
+        self._uow.rollback()  # invariant 5: no transaction open during PayPal calls
+        gateway = execution.gateway
+        state = self._read_invoice(gateway, draft_id)
+        if not self._same_amount(state.total_amount, expected):
+            raise ConflictError(
+                "PAYMENT_AMOUNT_MISMATCH",
+                "The PayPal invoice total differs from the approved amount",
+            )
+        if not is_paid_in_full(state, expected):
+            try:
+                gateway.record_payment(draft_id, self._remaining_amount(state, expected))
+            except PayPalError as err:
+                raise UpstreamError(err.code, err.message) from err
+            state = self._read_invoice(gateway, draft_id)
+        if is_paid_in_full(state, expected):
+            summary = self._confirmation_summary(alternative, draft_id, sandbox_shortcut=True)
+            self._confirm_payment(record=record, draft_id=draft_id, summary=summary)
+        current = self._require_record(proposal_id)
+        return ProposalStatusOut(
+            proposal_id=proposal_id,
+            status=current.status,
+            audit_events=self._events_since(proposal_id, last_seq),
+        )
+
+    def _lazy_reconcile(self, record: ProposalRecord) -> bool:
+        """Ask PayPal whether an EXECUTED proposal was paid (ROADMAP 4.5).
+
+        Returns True when PayPal was asked, so the caller re-reads the row. PayPal failures
+        never break the GET: the check is throttled and retried on a later request.
+        """
+        if self._execution_provider is None or record.status is not ProposalStatus.EXECUTED:
+            return False
+        last = record.last_paypal_check_at
+        if last is not None and self._clock() - last <= LAZY_RECONCILE_INTERVAL:
+            return False
+        try:
+            draft_id, alternative = self._payment_target(record)
+        except (ConflictError, UnprocessableError):
+            return False
+
+        self._uow.rollback()  # invariant 5: no transaction open during PayPal calls
+        paid = False
+        try:
+            state = self._execution().gateway.get_invoice(draft_id)
+            paid = is_paid_in_full(state, alternative.amount_due_now)
+        except (PayPalError, UpstreamError) as err:
+            logger.warning(
+                "Lazy PayPal check failed for proposal %s: %s",
+                record.proposal_id,
+                getattr(err, "code", type(err).__name__),
+            )
+        if paid:
+            summary = self._confirmation_summary(alternative, draft_id, sandbox_shortcut=False)
+            self._confirm_payment(record=record, draft_id=draft_id, summary=summary)
+        else:
+            self._touch_paypal_check(record.proposal_id)
+        return True
+
+    def _confirm_payment(self, *, record: ProposalRecord, draft_id: str, summary: str) -> bool:
+        """CAS EXECUTED -> PAID plus PAYMENT_CONFIRMED in one transaction.
+
+        Returns False when another path (webhook, another check) already moved the proposal.
+        """
+        assert_transition(ProposalStatus.EXECUTED, ProposalStatus.PAID)
+        try:
+            if not self._proposals.mark_paid(proposal_id=record.proposal_id, now=self._clock()):
+                self._uow.rollback()
+                return False
+            self._audit.record(
+                actor=Actor(type="PAYPAL", id="paypal_invoicing"),
+                action="PAYMENT_CONFIRMED",
+                severity=Severity.INFO,
+                summary=summary,
+                invoice_id=record.invoice_id,
+                proposal_id=record.proposal_id,
+                state_from=ProposalStatus.EXECUTED,
+                state_to=ProposalStatus.PAID,
+                paypal_called=True,
+                source="RECONCILIATION",
+                paypal_ref=draft_id,
+            )
+            self._uow.commit()
+        except Exception:
+            self._uow.rollback()
+            raise
+        return True
+
+    def _touch_paypal_check(self, proposal_id: str) -> None:
+        try:
+            self._proposals.touch_paypal_check(proposal_id=proposal_id, now=self._clock())
+            self._uow.commit()
+        except Exception:
+            self._uow.rollback()
+            raise
+
+    @staticmethod
+    def _confirmation_summary(
+        alternative: Alternative, draft_id: str, *, sandbox_shortcut: bool
+    ) -> str:
+        label = confirmation_label(alternative.type)
+        prefix = "Merchant-recorded payment (Sandbox): " if sandbox_shortcut else ""
+        summary = f"{prefix}{label} on PayPal invoice {draft_id}"
+        notice = simulation_notice(alternative.type)
+        return f"{summary}. {notice}" if notice else summary
+
+    def _sandbox_shortcut_enabled(self) -> bool:
+        return (
+            self._settings.allow_sandbox_payment_shortcut
+            and "sandbox" in self._settings.paypal_base_url.lower()
+        )
+
+    def _execution(self) -> ExecutionService:
+        if self._execution_provider is None:
+            raise RuntimeError("RecoveryService was built without a PayPal execution provider")
+        return self._execution_provider()
+
+    def _require_record(self, proposal_id: str) -> ProposalRecord:
+        record = self._proposals.get(proposal_id)
+        if record is None:
+            raise NotFoundError("PROPOSAL_NOT_FOUND", "Proposal not found")
+        return record
+
+    def _approved_alternative(self, record: ProposalRecord) -> Alternative:
+        if record.result is None:
+            raise ConflictError("PROPOSAL_IN_PROGRESS", "The proposal is still being drafted")
+        try:
+            return select_approved_alternative(
+                record.result.alternatives, record.approved_alternative
+            )
+        except AlternativeMappingError as err:
+            raise UnprocessableError(err.code, err.message) from err
+
+    def _payment_target(self, record: ProposalRecord) -> tuple[str, Alternative]:
+        """PayPal id of the sent replacement invoice and the alternative it bills."""
+        execution = record.execution
+        if execution is None or not execution.new_sent or execution.draft_id is None:
+            raise ConflictError("EXECUTION_INCOMPLETE", "The replacement invoice was never sent")
+        return execution.draft_id, self._approved_alternative(record)
+
+    def _payment_context(self, record: ProposalRecord) -> PaymentContext:
+        context = self._invoices.get_payment_context(record.invoice_id)
+        if context is None:
+            raise NotFoundError("INVOICE_NOT_FOUND", "Invoice not found")
+        return context
+
+    @staticmethod
+    def _original_paypal_id(context: PaymentContext) -> str:
+        if not context.paypal_invoice_id:
+            raise ConflictError(
+                "INVOICE_NOT_LINKED_TO_PAYPAL", "The invoice has no PayPal invoice to replace"
+            )
+        return context.paypal_invoice_id
+
+    @staticmethod
+    def _read_invoice(gateway: PayPalGateway, invoice_id: str) -> PayPalInvoiceState:
+        try:
+            return gateway.get_invoice(invoice_id)
+        except PayPalError as err:
+            raise UpstreamError(err.code, err.message) from err
+
+    @staticmethod
+    def _same_amount(reported: str | None, expected: str) -> bool:
+        if reported is None:
+            return False
+        try:
+            return Decimal(reported) == Decimal(expected)
+        except InvalidOperation:
+            return False
+
+    @staticmethod
+    def _remaining_amount(state: PayPalInvoiceState, expected: str) -> str:
+        """Server-side amount still unpaid on the replacement invoice, as a Money string."""
+        try:
+            paid = Decimal(state.paid_amount) if state.paid_amount is not None else Decimal("0")
+            remaining = Decimal(expected) - paid
+        except InvalidOperation as err:
+            raise ConflictError(
+                "PAYMENT_STATE_UNEXPECTED", "PayPal reported an unreadable paid amount"
+            ) from err
+        if remaining <= Decimal("0"):
+            raise ConflictError(
+                "PAYMENT_STATE_UNEXPECTED", "PayPal reports the amount as paid but not settled"
+            )
+        return format(remaining.quantize(_MONEY_QUANTUM, rounding=ROUND_HALF_UP), "f")
+
+    def _last_audit_seq(self, proposal_id: str) -> int:
+        page = self._audit.list_events(after_seq=0, limit=MAX_PAGE_LIMIT, proposal_id=proposal_id)
+        return page.next_seq
+
+    def _events_since(self, proposal_id: str, after_seq: int) -> list[AuditEvent]:
+        page = self._audit.list_events(
+            after_seq=after_seq, limit=MAX_PAGE_LIMIT, proposal_id=proposal_id
+        )
+        return page.items
 
     # --- internals ------------------------------------------------------------------------------
 
@@ -814,4 +1605,25 @@ class RecoveryService:
             currency=record.currency,
             result=record.result,
             audit_event=page.items[-1] if page.items else None,
+            approved_alternative=record.approved_alternative,
+            paypal=self._paypal_execution(record),
+        )
+
+    def _paypal_execution(self, record: ProposalRecord) -> PayPalExecution | None:
+        """Execution progress for the UI, derived from the persisted journal snapshot."""
+        execution = record.execution
+        if execution is None:
+            return None
+        invoice = self._invoices.get(record.invoice_id)
+        steps: list[str] = []
+        if execution.draft_id is not None:
+            steps.append("draft_created")
+        if execution.original_cancelled:
+            steps.append("original_cancelled")
+        if execution.new_sent:
+            steps.append("draft_sent")
+        return PayPalExecution(
+            new_invoice_id=execution.draft_id,
+            original_invoice_id=invoice.paypal_invoice_id if invoice else None,
+            steps=steps,
         )

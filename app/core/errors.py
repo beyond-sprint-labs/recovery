@@ -40,6 +40,12 @@ class UpstreamError(AppError):
     status_code = 502
 
 
+class UnauthorizedError(AppError):
+    """The caller could not be authenticated (invalid webhook signature)."""
+
+    status_code = 401
+
+
 def error_body(code: str, message: str) -> dict[str, dict[str, str]]:
     """Build the canonical error envelope."""
     return {"error": {"code": code, "message": message}}
