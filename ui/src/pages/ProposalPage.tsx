@@ -320,33 +320,55 @@ function AlternativeCard({
 }
 
 function BlockedCard({ proposal }: { proposal: ProposalOut }) {
+  const reason = proposal.blocked_reasons?.[0];
+  const ruleCode = reason?.code;
+  
+  // If there's no limit or attempt, or the code is for clarification, we show a nice generic notice
+  const isMissingData = !reason?.limit || reason.limit === "—" || ruleCode === "CLARIFICATION_REQUIRED" || ruleCode === "INVALID_AGENT_OUTPUT";
+  const isAgentIssue = ruleCode === "INVALID_AGENT_OUTPUT" || ruleCode === "CLARIFICATION_REQUIRED";
+  
   return (
     <section style={{ 
       background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', 
       padding: '24px', marginBottom: '24px' 
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-        <span style={{ fontSize: '24px' }}>🚫</span>
-        <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#991b1b', margin: 0 }}>Blocked by AI Guardrail</h2>
+        <span style={{ fontSize: '24px' }}>{isAgentIssue ? "🤖" : "🚫"}</span>
+        <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#991b1b', margin: 0 }}>
+          {isAgentIssue ? "AI Agent Unavailable" : "Blocked by AI Guardrail"}
+        </h2>
       </div>
+      
       <p style={{ color: '#991b1b', fontSize: '14px', marginBottom: '16px' }}>
-        The AI attempted to generate terms that violate your financial policy. No PayPal actions were taken.
+        {isAgentIssue 
+          ? "The AI agent is currently offline or could not process the request. Please ensure the LLM API key is configured in the backend, or select a scripted scenario (S01/S03) for testing."
+          : "The AI attempted to generate terms that violate your financial policy. No PayPal actions were taken."}
       </p>
       
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', background: 'white', padding: '16px', borderRadius: '8px' }}>
-        <div>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Rule</div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>{proposal.blocked_reasons?.[0]?.code}</div>
+      {/* We only show the grid if there’s real data for limit and attempt */}
+      {!isMissingData && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', background: 'white', padding: '16px', borderRadius: '8px' }}>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Rule</div>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>{ruleCode}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Limit</div>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>{reason?.limit}%</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Attempted</div>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--status-danger)' }}>{reason?.attempted}%</div>
+          </div>
         </div>
-        <div>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Limit</div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>{proposal.blocked_reasons?.[0]?.limit}%</div>
+      )}
+
+      {/* Note for the developer */}
+      {isAgentIssue && (
+        <div style={{ marginTop: '16px', fontSize: '12px', color: '#991b1b', background: '#fee2e2', padding: '8px 12px', borderRadius: '6px' }}>
+          <strong>Developer note:</strong> Ensure <code>AGENT_MODE</code> and <code>LLM_API_KEY</code> are set in the backend <code>.env</code>. For demo purposes, use the <code>S01</code> or <code>S03</code> scripted scenarios.
         </div>
-        <div>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Attempted</div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--status-danger)' }}>{proposal.blocked_reasons?.[0]?.attempted}%</div>
-        </div>
-      </div>
+      )}
     </section>
   );
 }
