@@ -1,0 +1,17 @@
+{
+  "branch": "qa/f1-23-phase-a",
+  "commit": "162b2abb3687035e66cecd09b61898ea352289cc",
+  "generated_at": "2026-11-10T17:10:26.645767+00:00",
+  "platform": "win32",
+  "python": "3.12.15 (main, Oct  9 2026, 15:21:55) [MSC v.1944 64 bit (AMD64)]",
+  "settings": {
+    "AGENT_MODE": "scripted",
+    "ALLOW_SANDBOX_PAYMENT_SHORTCUT": "false",
+    "ALLOW_SCENARIO_ID": "true",
+    "APP_ENV": "local",
+    "DATABASE_URL": "temporary SQLite per scenario",
+    "DEMO_MODE": "true",
+    "PAYPAL_MODE": "mock",
+    "PUBLIC_BASE_URL": "http://localhost:8000"
+  }
+}

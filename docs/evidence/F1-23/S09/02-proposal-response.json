@@ -1,0 +1,79 @@
+{
+  "body": {
+    "alternatives": [],
+    "approved_alternative": null,
+    "attempted": [],
+    "audit_event": {
+      "action": "PROPOSAL_BLOCKED",
+      "actor": {
+        "id": "recovery_service",
+        "mode": null,
+        "type": "SYSTEM"
+      },
+      "event_id": "aud_000001",
+      "invoice_id": "INV-001",
+      "paypal_called": false,
+      "paypal_ref": null,
+      "proposal_id": "prop_2a6b673e15e7",
+      "proposed_by": {
+        "id": "agent_v1",
+        "mode": "DEMO",
+        "type": "AGENT"
+      },
+      "rule": {
+        "attempted": null,
+        "code": "CLARIFICATION_REQUIRED",
+        "limit": null,
+        "message": "The customer message has no concrete payment request; ask the customer to clarify",
+        "unit": null
+      },
+      "seq": 1,
+      "severity": "WARN",
+      "source": null,
+      "state_from": "DRAFTED",
+      "state_to": "BLOCKED",
+      "summary": "Customer message needs clarification; no alternatives drafted; PayPal not called",
+      "ts": "2026-11-10T17:10:30Z"
+    },
+    "blocked_reasons": [
+      {
+        "attempted": null,
+        "code": "CLARIFICATION_REQUIRED",
+        "limit": null,
+        "message": "The customer message has no concrete payment request; ask the customer to clarify",
+        "unit": null
+      }
+    ],
+    "currency": "USD",
+    "customer_intent": {
+      "available_now": null,
+      "desired_date": null,
+      "preferred_installments": null,
+      "requested_discount_pct": null
+    },
+    "customer_message_draft": null,
+    "engine_version": "1.0.0",
+    "explanation": null,
+    "invoice_id": "INV-001",
+    "paypal": null,
+    "paypal_called": false,
+    "policy_check": {
+      "status": "BLOCKED",
+      "violations": []
+    },
+    "proposal_id": "prop_2a6b673e15e7",
+    "status": "BLOCKED",
+    "text_number_check": {
+      "numbers_in_text": [],
+      "status": "SKIPPED",
+      "unmatched": []
+    }
+  },
+  "headers": {
+    "content-length": "1375",
+    "content-type": "application/json",
+    "vary": "Origin"
+  },
+  "status_code": 200,
+  "ts": "2026-11-10T17:10:30.270128+00:00"
+}

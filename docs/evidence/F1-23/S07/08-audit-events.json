@@ -1,0 +1,41 @@
+{
+  "body": {
+    "items": [
+      {
+        "action": "PROPOSAL_BLOCKED",
+        "actor": {
+          "id": "recovery_service",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000001",
+        "invoice_id": "INV-001",
+        "paypal_called": false,
+        "paypal_ref": null,
+        "proposal_id": "prop_00c4682561f2",
+        "proposed_by": {
+          "id": "agent_v1",
+          "mode": "DEMO",
+          "type": "AGENT"
+        },
+        "rule": {
+          "attempted": null,
+          "code": "CLARIFICATION_REQUIRED",
+          "limit": null,
+          "message": "The customer message has no concrete payment request; ask the customer to clarify",
+          "unit": null
+        },
+        "seq": 1,
+        "severity": "WARN",
+        "source": null,
+        "state_from": "DRAFTED",
+        "state_to": "BLOCKED",
+        "summary": "Customer message needs clarification; no alternatives drafted; PayPal not called",
+        "ts": "2026-11-10T17:10:30Z"
+      }
+    ],
+    "next_seq": 1
+  },
+  "status_code": 200,
+  "ts": "2026-11-10T17:10:30.105837+00:00"
+}

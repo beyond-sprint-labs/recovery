@@ -1,0 +1,109 @@
+{
+  "actual_code": "INVALID_AGENT_OUTPUT",
+  "actual_status": "BLOCKED",
+  "api_expected_code": "INVALID_AGENT_OUTPUT",
+  "api_expected_status": "BLOCKED",
+  "catalog_outcome": "INVALID_AGENT_OUTPUT",
+  "category": "invalid_agent_output",
+  "checks": [
+    {
+      "actual": 200,
+      "check": "HTTP 200 for business result",
+      "critical": true,
+      "expected": 200,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "BLOCKED",
+      "check": "proposal status",
+      "critical": true,
+      "expected": "BLOCKED",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "INVALID_AGENT_OUTPUT",
+      "check": "blocked reason code",
+      "critical": true,
+      "expected": "INVALID_AGENT_OUTPUT",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": {
+        "available_now": null,
+        "desired_date": null,
+        "preferred_installments": null,
+        "requested_discount_pct": null
+      },
+      "check": "customer_intent matches catalog",
+      "critical": false,
+      "expected": {
+        "available_now": null,
+        "desired_date": null,
+        "preferred_installments": null,
+        "requested_discount_pct": "150"
+      },
+      "note": "S10 fails contract validation before an intent is available; the rejected 150% value is not exposed by the API.",
+      "passed": false
+    },
+    {
+      "actual": [],
+      "check": "no alternatives offered",
+      "critical": true,
+      "expected": [],
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": false,
+      "check": "PayPal not called",
+      "critical": true,
+      "expected": false,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        {
+          "attempted": null,
+          "code": "INVALID_AGENT_OUTPUT",
+          "limit": null,
+          "message": "The agent output failed contract validation",
+          "unit": null
+        }
+      ],
+      "check": "blocked reasons present",
+      "critical": true,
+      "expected": true,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "PROPOSAL_BLOCKED"
+      ],
+      "check": "PROPOSAL_BLOCKED audit event",
+      "critical": true,
+      "expected": "PROPOSAL_BLOCKED",
+      "note": null,
+      "passed": true
+    }
+  ],
+  "evidence_dir": "docs/evidence/F1-23/S10",
+  "executed_at": "2026-11-10T17:10:30.369978+00:00",
+  "http_status": 200,
+  "proposal_id": "prop_e01a4f8a9fc9",
+  "scenario_id": "S10",
+  "scenario_name": "S10_invalid_discount_150",
+  "status": "PASS_WITH_OBSERVATION",
+  "steps": [
+    {
+      "blocked_reason": "INVALID_AGENT_OUTPUT",
+      "http_status": 200,
+      "status": "BLOCKED",
+      "step": "create_proposal"
+    }
+  ]
+}

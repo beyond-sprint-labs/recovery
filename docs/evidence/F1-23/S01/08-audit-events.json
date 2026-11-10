@@ -1,0 +1,229 @@
+{
+  "body": {
+    "items": [
+      {
+        "action": "PROPOSAL_DRAFTED",
+        "actor": {
+          "id": "recovery_service",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000001",
+        "invoice_id": "INV-001",
+        "paypal_called": false,
+        "paypal_ref": null,
+        "proposal_id": "prop_44749a9406bc",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 1,
+        "severity": "INFO",
+        "source": null,
+        "state_from": "DRAFTED",
+        "state_to": "PENDING_MERCHANT",
+        "summary": "2 alternatives drafted within policy; awaiting merchant approval",
+        "ts": "2026-11-10T17:10:29Z"
+      },
+      {
+        "action": "PROPOSAL_APPROVED",
+        "actor": {
+          "id": "merchant_demo",
+          "mode": null,
+          "type": "MERCHANT"
+        },
+        "event_id": "aud_000002",
+        "invoice_id": "INV-001",
+        "paypal_called": false,
+        "paypal_ref": null,
+        "proposal_id": "prop_44749a9406bc",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 2,
+        "severity": "INFO",
+        "source": null,
+        "state_from": "PENDING_MERCHANT",
+        "state_to": "APPROVED",
+        "summary": "Merchant approved the down payment + installments option. Merchant note: F1-23 Phase A QA",
+        "ts": "2026-11-10T17:10:29Z"
+      },
+      {
+        "action": "CUSTOMER_LINK_ISSUED",
+        "actor": {
+          "id": "recovery_service",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000003",
+        "invoice_id": "INV-001",
+        "paypal_called": false,
+        "paypal_ref": null,
+        "proposal_id": "prop_44749a9406bc",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 3,
+        "severity": "INFO",
+        "source": null,
+        "state_from": "APPROVED",
+        "state_to": "PENDING_CUSTOMER",
+        "summary": "Single-use customer link issued; expires in 24 hours",
+        "ts": "2026-11-10T17:10:29Z"
+      },
+      {
+        "action": "CUSTOMER_ACCEPTED",
+        "actor": {
+          "id": "customer_demo",
+          "mode": null,
+          "type": "CUSTOMER"
+        },
+        "event_id": "aud_000004",
+        "invoice_id": "INV-001",
+        "paypal_called": false,
+        "paypal_ref": null,
+        "proposal_id": "prop_44749a9406bc",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 4,
+        "severity": "INFO",
+        "source": null,
+        "state_from": "PENDING_CUSTOMER",
+        "state_to": "ACCEPTED",
+        "summary": "Customer accepted the pre-approved option",
+        "ts": "2026-11-10T17:10:29Z"
+      },
+      {
+        "action": "EXECUTION_STARTED",
+        "actor": {
+          "id": "recovery_service",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000005",
+        "invoice_id": "INV-001",
+        "paypal_called": false,
+        "paypal_ref": null,
+        "proposal_id": "prop_44749a9406bc",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 5,
+        "severity": "INFO",
+        "source": null,
+        "state_from": "ACCEPTED",
+        "state_to": "EXECUTING",
+        "summary": "Execution started; replacing the original invoice in PayPal",
+        "ts": "2026-11-10T17:10:29Z"
+      },
+      {
+        "action": "PAYPAL_DRAFT_CREATED",
+        "actor": {
+          "id": "execution_service",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000006",
+        "invoice_id": "INV-001",
+        "paypal_called": true,
+        "paypal_ref": "MOCK-INV-C4FC90B3",
+        "proposal_id": "prop_44749a9406bc",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 6,
+        "severity": "INFO",
+        "source": null,
+        "state_from": null,
+        "state_to": null,
+        "summary": "Draft MOCK-INV-C4FC90B3 created.",
+        "ts": "2026-11-10T17:10:29Z"
+      },
+      {
+        "action": "PAYPAL_ORIGINAL_CANCELLED",
+        "actor": {
+          "id": "execution_service",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000007",
+        "invoice_id": "INV-001",
+        "paypal_called": true,
+        "paypal_ref": "MOCK-INV-30C2F945",
+        "proposal_id": "prop_44749a9406bc",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 7,
+        "severity": "INFO",
+        "source": null,
+        "state_from": null,
+        "state_to": null,
+        "summary": "Original MOCK-INV-30C2F945 cancelled.",
+        "ts": "2026-11-10T17:10:29Z"
+      },
+      {
+        "action": "PAYPAL_INVOICE_SENT",
+        "actor": {
+          "id": "execution_service",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000008",
+        "invoice_id": "INV-001",
+        "paypal_called": true,
+        "paypal_ref": "MOCK-INV-C4FC90B3",
+        "proposal_id": "prop_44749a9406bc",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 8,
+        "severity": "INFO",
+        "source": null,
+        "state_from": null,
+        "state_to": null,
+        "summary": "Draft MOCK-INV-C4FC90B3 sent to customer.",
+        "ts": "2026-11-10T17:10:29Z"
+      },
+      {
+        "action": "EXECUTION_COMPLETED",
+        "actor": {
+          "id": "execution_service",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000009",
+        "invoice_id": "INV-001",
+        "paypal_called": true,
+        "paypal_ref": "MOCK-INV-C4FC90B3",
+        "proposal_id": "prop_44749a9406bc",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 9,
+        "severity": "INFO",
+        "source": null,
+        "state_from": "EXECUTING",
+        "state_to": "EXECUTED",
+        "summary": "Replacement completed successfully.",
+        "ts": "2026-11-10T17:10:29Z"
+      },
+      {
+        "action": "PAYMENT_CONFIRMED",
+        "actor": {
+          "id": "paypal_invoicing",
+          "mode": null,
+          "type": "PAYPAL"
+        },
+        "event_id": "aud_000010",
+        "invoice_id": "INV-001",
+        "paypal_called": true,
+        "paypal_ref": "MOCK-INV-C4FC90B3",
+        "proposal_id": "prop_44749a9406bc",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 10,
+        "severity": "INFO",
+        "source": "WEBHOOK",
+        "state_from": "EXECUTED",
+        "state_to": "PAID",
+        "summary": "Payment confirmed via webhook on PayPal invoice MOCK-INV-C4FC90B3",
+        "ts": "2026-11-10T17:10:29Z"
+      }
+    ],
+    "next_seq": 10
+  },
+  "status_code": 200,
+  "ts": "2026-11-10T17:10:29.429222+00:00"
+}
