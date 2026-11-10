@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import './App.css';
-import { AuditPage } from './pages/AuditPage';
-import { ProposalPage } from './pages/ProposalPage';
-import { InvoicesPage } from './pages/InvoicesPage';
-import { CustomerPage } from './pages/CustomerPage';
+
+// Lazy loaded page components for optimal code-splitting and scalability
+const AuditPage = lazy(() => import('./pages/AuditPage').then((m) => ({ default: m.AuditPage })));
+const ProposalPage = lazy(() => import('./pages/ProposalPage').then((m) => ({ default: m.ProposalPage })));
+const InvoicesPage = lazy(() => import('./pages/InvoicesPage').then((m) => ({ default: m.InvoicesPage })));
+const CustomerPage = lazy(() => import('./pages/CustomerPage').then((m) => ({ default: m.CustomerPage })));
 
 type TabType = 'audit' | 'comparator' | 'invoices' | 'customer';
 
@@ -78,24 +80,32 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Screen Content */}
+      {/* Main Screen Content with Suspense for lazy route chunks */}
       <main className="main-content" role="main">
-        {activeTab === 'audit' && <AuditPage />}
-        {activeTab === 'comparator' && (
-          <ProposalPage
-            invoiceId={selectedInvoiceId}
-            onNavigateToCustomer={handleNavigateToCustomer}
-          />
-        )}
-        {activeTab === 'invoices' && (
-          <InvoicesPage onSelectInvoice={handleSelectInvoice} />
-        )}
-        {activeTab === 'customer' && (
-          <CustomerPage
-            token={customerToken}
-            onBackToMerchant={() => setActiveTab('comparator')}
-          />
-        )}
+        <Suspense
+          fallback={
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '360px', color: '#64748b' }}>
+              <span>Loading view...</span>
+            </div>
+          }
+        >
+          {activeTab === 'audit' && <AuditPage />}
+          {activeTab === 'comparator' && (
+            <ProposalPage
+              invoiceId={selectedInvoiceId}
+              onNavigateToCustomer={handleNavigateToCustomer}
+            />
+          )}
+          {activeTab === 'invoices' && (
+            <InvoicesPage onSelectInvoice={handleSelectInvoice} />
+          )}
+          {activeTab === 'customer' && (
+            <CustomerPage
+              token={customerToken}
+              onBackToMerchant={() => setActiveTab('comparator')}
+            />
+          )}
+        </Suspense>
       </main>
 
       {/* Mandatory permanent disclaimer (DEC-07 / Frontend.md) */}

@@ -69,10 +69,17 @@ export const apiClient = {
       }
       return mockProposalPending as unknown as Proposal;
     }
-    const res = await fetch(`${BASE_URL}/proposals`, {
+    const idempotencyKey = `prop-req-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const res = await fetch(`${BASE_URL}/invoices/${invoiceId}/proposals`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ invoice_id: invoiceId }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Idempotency-Key': idempotencyKey,
+      },
+      body: JSON.stringify({
+        customer_message: 'Customer requested manageable settlement options for overdue invoice.',
+        scenario_id: scenario === 'BLOCKED' ? 'scen_blocked_discount' : 'scen_standard_repay',
+      }),
     });
     if (!res.ok) throw new Error(`HTTP error ${res.status}`);
     return res.json();
@@ -136,12 +143,12 @@ export const apiClient = {
     return res.json();
   },
 
-  async reconcile(invoiceId: string): Promise<{ invoice_id: string; status: string }> {
+  async reconcile(proposalId: string): Promise<{ proposal_id: string; status: string }> {
     if (USE_MOCKS) {
       await delay();
-      return { invoice_id: invoiceId, status: 'RECONCILED' };
+      return { proposal_id: proposalId, status: 'RECONCILED' };
     }
-    const res = await fetch(`${BASE_URL}/reconcile/${invoiceId}`, { method: 'POST' });
+    const res = await fetch(`${BASE_URL}/proposals/${proposalId}/reconcile`, { method: 'POST' });
     if (!res.ok) throw new Error(`HTTP error ${res.status}`);
     return res.json();
   },
