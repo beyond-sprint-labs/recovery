@@ -1,6 +1,6 @@
 # Recovery — Lightweight OCI Deployment Guide (Phase 1)
 
-**Target Stack:** Oracle Cloud Infrastructure (Always Free Ubuntu 22.04/24.04 LTS), Caddy (Automated TLS/HTTPS reverse proxy), Python 3.11+, Uvicorn (1 worker), SQLite (WAL mode).
+**Target Stack:** Oracle Cloud Infrastructure (Always Free **Ubuntu 24.04 LTS**, which ships Python 3.12), Caddy (Automated TLS/HTTPS reverse proxy), Python 3.12, Uvicorn (1 worker), SQLite (WAL mode).
 
 > **Critical Stability Notice:** Always Free instances with 1 OCPU and 1 GB RAM will trigger Out-Of-Memory (OOM) kernel panics if Node.js is compiled directly on the server or if multiple Uvicorn workers run concurrently. Follow this specification verbatim.
 
@@ -59,6 +59,7 @@ curl -1sLF 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo 
 sudo apt update
 sudo apt install -y caddy
 ```
+Verify the interpreter before continuing: `python3 --version` must print `Python 3.12.x`. Ubuntu 22.04 ships Python 3.10 and is not supported.
 
 ---
 
@@ -77,8 +78,7 @@ source .venv/bin/activate
 pip install -U pip
 pip install -e .
 
-# Initialize production environment configuration
-cp .env.example .env
+# Create the production environment file with exactly the variables listed below
 nano .env
 ```
 
@@ -88,20 +88,27 @@ APP_ENV=production
 DEMO_MODE=false
 PAYPAL_MODE=real
 AGENT_MODE=llm
-LLM_PROVIDER=gemini
-LLM_MODEL=<GEMINI_MODEL_ID>
-LLM_API_KEY=<GEMINI_API_KEY>
 ALLOW_SCENARIO_ID=true
+ALLOW_SANDBOX_PAYMENT_SHORTCUT=true
 DATABASE_URL=sqlite:///./recovery.db
 PUBLIC_BASE_URL=https://<YOUR_DOMAIN_OR_NIP_IO>
 CORS_ORIGINS=https://<YOUR_DOMAIN_OR_NIP_IO>
 UVICORN_WORKERS=1
+LLM_PROVIDER=<LLM_PROVIDER>
+LLM_MODEL=<LLM_MODEL>
+LLM_API_KEY=<LLM_API_KEY>
 PAYPAL_BASE_URL=https://api-m.sandbox.paypal.com
 PAYPAL_CLIENT_ID=<SANDBOX_CLIENT_ID>
 PAYPAL_CLIENT_SECRET=<SANDBOX_CLIENT_SECRET>
 PAYPAL_WEBHOOK_ID=<REGISTERED_WEBHOOK_ID>
 PAYPAL_MERCHANT_EMAIL=<SANDBOX_BUSINESS_EMAIL>
+PAYPAL_SANDBOX_BUYER_EMAIL=<SANDBOX_PERSONAL_BUYER_EMAIL>
 ```
+Do not copy `.env.example` for production: systemd's `EnvironmentFile` does not strip inline `# comments`, so a value such as `1440   # lifetime...` would be read literally and the service would fail to start.
+
+`PAYPAL_WEBHOOK_ID` only exists after the webhook is registered (section 7). Leave it empty for now, then fill it in and restart the service.
+
+The service refuses to start with `AGENT_MODE=llm` if the LLM settings are incomplete. `ALLOW_SANDBOX_PAYMENT_SHORTCUT=true` enables the labelled Sandbox payment shortcut and only works while `PAYPAL_BASE_URL` contains `sandbox`.
 
 **LLM startup validation:** With `AGENT_MODE=llm`, the service refuses to start if `LLM_PROVIDER`, `LLM_MODEL`, or `LLM_API_KEY` is missing. If `systemctl status recovery` shows a restart loop, inspect the logs with `journalctl -u recovery` and verify the LLM environment variables. Never commit real API credentials.
 
@@ -199,3 +206,14 @@ sudo systemctl restart caddy
 
 2. Register the public HTTPS webhook URL in the PayPal Developer Dashboard:
    `https://<YOUR_DOMAIN_OR_IP.nip.io>/api/v1/webhooks/paypal`
+
+3. Copy the Webhook ID shown in the PayPal Developer Dashboard into `PAYPAL_WEBHOOK_ID` in `.env` and restart the service:
+   ```bash
+   sudo systemctl restart recovery
+   ```
+
+4. Confirm the seeded invoices are visible:
+   ```bash
+   curl -s https://<YOUR_DOMAIN_OR_IP.nip.io>/api/v1/invoices
+   ```
+   The response must list `INV-001` with balance `1000.00` and status `OVERDUE`.
