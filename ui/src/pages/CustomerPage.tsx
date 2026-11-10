@@ -58,48 +58,67 @@ export function CustomerPage() {
   if (!view) return <div className="page">Link not found.</div>;
 
   if (responded) {
+    
+    const isAccepted = responded.status === "ACCEPTED" || responded.status === "EXECUTED" || responded.status === "PAID";
+    const isDeclined = responded.status === "DECLINED";
+
     return (
       <div className="customer-portal-wrapper">
-        <div className="card" style={{ border: '1px solid var(--status-success)', textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px', color: 'var(--status-success)' }}>✅</div>
-          <h1 style={{ fontSize: '24px', marginBottom: '8px' }}>Repayment Plan Activated!</h1>
+        <div className="card" style={{ 
+          border: isAccepted ? '1px solid var(--status-success)' : '1px solid var(--border-subtle)', 
+          textAlign: 'center' 
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px', color: isAccepted ? 'var(--status-success)' : 'inherit' }}>
+            {isAccepted ? "✅" : isDeclined ? "🚫" : "⏳"}
+          </div>
+          
+          <h1 style={{ fontSize: '24px', marginBottom: '8px' }}>
+            {isAccepted ? "Repayment Plan Activated!" : isDeclined ? "Offer Declined" : "Processing..."}
+          </h1>
+          
           <p className="muted" style={{ marginBottom: '32px' }}>
-            Your agreement has been submitted to PayPal Sandbox. The revised invoice schedule is now active.
+            {isAccepted 
+              ? "Your agreement has been submitted to PayPal Sandbox. The revised invoice schedule is now active."
+              : isDeclined 
+              ? "You have declined the repayment offer. The merchant will be notified."
+              : "We are finalizing your request with PayPal. Please wait."}
           </p>
           
-          <div style={{ textAlign: 'left', background: 'var(--bg-app)', padding: '24px', borderRadius: 'var(--radius-sm)', marginBottom: '32px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>PayPal Sandbox Orchestration Details:</h3>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
-                <span className="muted">Original Invoice:</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-tertiary)', textDecoration: 'line-through' }}>
-                  {responded.paypal?.original_invoice_id || "N/A"} (Cancelled)
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
-                <span className="muted">Replacement Invoice:</span>
-                <span style={{ fontWeight: 600, color: 'var(--status-success)' }}>
-                  {responded.paypal?.new_invoice_id || "N/A"} (Active)
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
-                <span className="muted">Initial Due Today:</span>
-                <span style={{ fontWeight: 600 }}>{formatMoney(view.alternative.amount_due_now)} USD</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                <span className="muted">First Payment Status:</span>
-                <span className="pill pill-approved" style={{ fontSize: '11px', padding: '2px 8px' }}>CONFIRMED (Sandbox Demo)</span>
+          {isAccepted && (
+            <div style={{ textAlign: 'left', background: 'var(--bg-app)', padding: '24px', borderRadius: 'var(--radius-sm)', marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>PayPal Sandbox Orchestration Details:</h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
+                  <span className="muted">Original Invoice:</span>
+                  <span style={{ fontWeight: 600, color: 'var(--text-tertiary)', textDecoration: 'line-through' }}>
+                    {responded.paypal?.original_invoice_id || "N/A"} (Cancelled)
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
+                  <span className="muted">Replacement Invoice:</span>
+                  <span style={{ fontWeight: 600, color: 'var(--status-success)' }}>
+                    {responded.paypal?.new_invoice_id || "N/A"} (Active)
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
+                  <span className="muted">Initial Due Today:</span>
+                  <span style={{ fontWeight: 600 }}>{formatMoney(view.alternative.amount_due_now)} USD</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                  <span className="muted">First Payment Status:</span>
+                  <span className="pill pill-approved" style={{ fontSize: '11px', padding: '2px 8px' }}>CONFIRMED (Sandbox Demo)</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           <button 
             className="btn" 
             style={{ width: '100%', padding: '14px' }}
-            onClick={() => window.location.href = '/app'}
+            onClick={() => window.location.href = '/'}
           >
-            Return to Merchant Dashboard
+            Return to Home
           </button>
           
           <p className="muted" style={{ fontSize: '12px', marginTop: '24px' }}>

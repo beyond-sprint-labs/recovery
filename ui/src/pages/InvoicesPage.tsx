@@ -12,7 +12,7 @@ export function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [proposing, setProposing] = useState<string | null>(null);
-  const [scenario, setScenario] = useState<string>("S01_partial_payment_now");
+  const [scenario, setScenario] = useState<string>("");
   const [message, setMessage] = useState<string>("I can pay part now, can we work something out?");
   const navigate = useNavigate();
 

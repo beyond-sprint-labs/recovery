@@ -8,13 +8,8 @@ export function Layout() {
   const [showSecureMsg, setShowSecureMsg] = useState(false);
 
   const handleCustomerPortalClick = () => {
-    const savedToken = localStorage.getItem("last_customer_token");
-    if (savedToken) {
-      navigate(`/customer/${savedToken}`);
-      setShowSecureMsg(false);
-    } else {
-      setShowSecureMsg(true);
-    }
+  
+    setShowSecureMsg(true);
   };
 
   return (
@@ -24,9 +19,7 @@ export function Layout() {
         <div className="brand" onClick={() => { navigate('/'); setShowSecureMsg(false); }} style={{ cursor: 'pointer' }}>
           <div 
             className="brand-logo" 
-            onClick={() => { navigate('/'); setShowSecureMsg(false); }} 
             style={{ 
-              cursor: 'pointer',
               background: '#ffffff',
               padding: '4px',
               borderRadius: '8px',
@@ -37,15 +30,17 @@ export function Layout() {
               justifyContent: 'center',
               boxShadow: 'var(--shadow-sm)'
             }}
-            >
+          >
             <img 
               src="/logo.png" 
               alt="DG" 
               style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement!.innerHTML = '<strong style="color:#0f172a; font-weight:800;">D</strong>';
-            }}
+                if(e.currentTarget.parentElement) {
+                  e.currentTarget.parentElement.innerHTML = '<strong style="color:#0f172a; font-weight:800;">D</strong>';
+                }
+              }}
             />
           </div>
           <div>
@@ -85,7 +80,7 @@ export function Layout() {
         {showSecureMsg ? (
           <SecurePlaceholder 
             title="Customer Link Protected"
-            description="For security, customer links are generated dynamically when you approve a proposal. To view the client experience, please go to the Overview, generate a proposal, and click 'Open customer view'."
+            description="For security, customer links are generated dynamically with a one-time token. To view the client experience, please go to the Overview, generate a proposal, and click 'Open customer view'."
             actionLabel="Return to Overview"
             onAction={() => setShowSecureMsg(false)}
           />

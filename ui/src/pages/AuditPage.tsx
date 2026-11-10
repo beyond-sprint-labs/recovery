@@ -33,14 +33,18 @@ export function AuditPage() {
     try {
       const page = await getAuditEvents(nextSeq);
       if (!aliveRef.current) return;
+      
       if (page.items.length > 0) {
         setRows((prev) => [...prev, ...page.items]);
         setNextSeq(page.next_seq);
-        gridApiRef.current?.applyTransaction({ add: page.items, addIndex: 0 });
+        
+
         if (autoScroll) {
-          const last = page.items[page.items.length - 1];
-          const node = gridApiRef.current?.getRowNode(last.event_id);
-          if (node) gridApiRef.current?.flashCells({ rowNodes: [node] });
+          setTimeout(() => {
+            const last = page.items[page.items.length - 1];
+            const node = gridApiRef.current?.getRowNode(last.event_id);
+            if (node) gridApiRef.current?.flashCells({ rowNodes: [node] });
+          }, 100);
         }
       }
     } catch (e) {
@@ -71,7 +75,6 @@ export function AuditPage() {
           </p>
         </div>
         
-        {/* Stream Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <label className="toggle" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, marginRight: '12px' }}>
             <input type="checkbox" checked={autoScroll} onChange={(e) => setAutoScroll(e.target.checked)} />
@@ -94,7 +97,6 @@ export function AuditPage() {
 
       {error ? <div className="error">{error}</div> : null}
 
-      {/* KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '32px' }}>
         <div className="card" style={{ padding: '24px' }}>
           <div className="muted" style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Total Events Streamed</div>

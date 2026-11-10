@@ -49,10 +49,6 @@ export function ProposalPage() {
         note: note || null,
       });
       
-      const token = out.customer_link.split("/").pop();
-      if (token) {
-        localStorage.setItem("last_customer_token", token);
-      }
 
       setApproveResult(out);
       setProposal({ ...proposal, status: out.status });

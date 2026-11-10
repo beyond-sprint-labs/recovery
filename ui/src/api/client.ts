@@ -46,18 +46,26 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   
   if (!res.ok) {
+    // 1. We try to read the error FIRST, outside the throw.
+    let errorMessage = `${res.status} ${res.statusText}`;
     try {
       const body = await res.json();
-      // Extraemos el mensaje del backend de FastAPI
-      const msg = body?.error?.message || body?.detail || `Error ${res.status}`;
-      throw new Error(msg);
-    } catch (e) {
-      throw new Error(`${res.status} ${res.statusText}`);
+      if (body?.error?.message) {
+        errorMessage = body.error.message;
+      } else if (body?.detail) {
+        errorMessage = body.detail;
+      }
+    } catch {
+      // If the body is not JSON, we keep the generic message.
     }
+    // 2. We throw the error with the correct message.
+    throw new Error(errorMessage);
   }
+  
   if (res.status === 204) {
     return undefined as unknown as T;
   }
+  
   return (await res.json()) as T;
 }
 
@@ -99,7 +107,9 @@ export async function getHealth(): Promise<{ status: string; demo_mode: boolean 
     await mockLatency();
     return { status: "ok", demo_mode: true };
   }
-  return request("/health");
+  
+  const baseUrl = API_BASE.replace("/api/v1", "");
+  return request(`${baseUrl}/health`);
 }
 
 export async function getInvoices(): Promise<Invoice[]> {
