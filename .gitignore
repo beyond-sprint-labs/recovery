@@ -10,6 +10,8 @@ coverage/
 .env
 .env.*
 !.env.example
+node_modules/
+__pycache__/
 
 # Local databases, including SQLite WAL side files
 *.db
@@ -31,3 +33,11 @@ ui/dist/
 .ipynb_checkpoints/
 finance_utils_amortization.png
 .review-tools/
+
+# Build outputs y DB
+dist/
+ui/dist/
+*.db
+*.db-wal
+*.db-shm
+*.db-journal

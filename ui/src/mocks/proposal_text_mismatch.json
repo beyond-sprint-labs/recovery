@@ -1,0 +1,47 @@
+{
+  "proposal_id": "prop_t9x1m3",
+  "invoice_id": "INV-002",
+  "status": "BLOCKED",
+  "engine_version": "1.0.0",
+  "currency": "USD",
+  "customer_intent": {
+    "available_now": null,
+    "preferred_installments": 3,
+    "requested_discount_pct": "10",
+    "desired_date": null
+  },
+  "alternatives": [],
+  "blocked_reasons": [
+    {
+      "code": "TEXT_NUMBER_MISMATCH",
+      "message": "Text mentions $850.00 which does not match any engine output",
+      "limit": "—",
+      "attempted": "850.00",
+      "unit": "usd"
+    }
+  ],
+  "explanation": null,
+  "customer_message_draft": null,
+  "policy_check": { "status": "PASSED", "violations": [] },
+  "text_number_check": {
+    "status": "FAILED",
+    "numbers_in_text": ["10", "850.00"],
+    "unmatched": ["850.00"]
+  },
+  "paypal_called": false,
+  "audit_event": {
+    "event_id": "aud_000011",
+    "seq": 11,
+    "ts": "2026-11-02T15:05:01Z",
+    "actor": { "type": "SYSTEM", "id": "text_guard" },
+    "action": "PROPOSAL_BLOCKED",
+    "invoice_id": "INV-002",
+    "proposal_id": "prop_t9x1m3",
+    "state_from": "DRAFTED",
+    "state_to": "BLOCKED",
+    "severity": "CRITICAL",
+    "rule": { "code": "TEXT_NUMBER_MISMATCH", "limit": "—", "attempted": "850.00", "unit": "usd" },
+    "summary": "Text guard rejected: $850.00 not present in engine output",
+    "paypal_called": false
+  }
+}

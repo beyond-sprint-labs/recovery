@@ -1,0 +1,8 @@
+{
+  "currency": "USD",
+  "max_discount_pct": "15",
+  "min_down_payment_pct": "20",
+  "max_installments": 6,
+  "max_financing_rate_pct": "2.0",
+  "merchant_discount_rate_pct": "1.0"
+}

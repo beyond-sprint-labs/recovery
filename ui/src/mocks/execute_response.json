@@ -1,0 +1,57 @@
+{
+  "proposal_id": "prop_7f3a9c",
+  "status": "EXECUTED",
+  "paypal": {
+    "new_invoice_id": "PP-INV-NEW-7f3a9c",
+    "original_invoice_id": "PP-INV-ORIG-001",
+    "steps": ["preflight_ok", "draft_created", "original_cancelled", "draft_sent"]
+  },
+  "audit_events": [
+    {
+      "event_id": "aud_000030",
+      "seq": 30,
+      "ts": "2026-11-02T15:05:34Z",
+      "actor": { "type": "CUSTOMER", "id": "customer_token" },
+      "action": "CUSTOMER_ACCEPTED",
+      "invoice_id": "INV-001",
+      "proposal_id": "prop_7f3a9c",
+      "state_from": "PENDING_CUSTOMER",
+      "state_to": "ACCEPTED",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "Customer accepted the proposal",
+      "paypal_called": false
+    },
+    {
+      "event_id": "aud_000031",
+      "seq": 31,
+      "ts": "2026-11-02T15:05:34Z",
+      "actor": { "type": "SYSTEM", "id": "recovery_service" },
+      "action": "EXECUTION_STARTED",
+      "invoice_id": "INV-001",
+      "proposal_id": "prop_7f3a9c",
+      "state_from": "ACCEPTED",
+      "state_to": "EXECUTING",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "Starting PayPal execution",
+      "paypal_called": false
+    },
+    {
+      "event_id": "aud_000032",
+      "seq": 32,
+      "ts": "2026-11-02T15:05:38Z",
+      "actor": { "type": "SYSTEM", "id": "recovery_service" },
+      "action": "EXECUTION_COMPLETED",
+      "invoice_id": "INV-001",
+      "proposal_id": "prop_7f3a9c",
+      "state_from": "EXECUTING",
+      "state_to": "EXECUTED",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "New invoice sent in PayPal",
+      "paypal_called": true,
+      "paypal_ref": "PP-INV-NEW-7f3a9c"
+    }
+  ]
+}

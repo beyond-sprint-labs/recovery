@@ -1,0 +1,80 @@
+{
+  "items": [
+    {
+      "event_id": "aud_000001",
+      "seq": 1,
+      "ts": "2026-11-02T14:59:11Z",
+      "actor": { "type": "SYSTEM", "id": "seed" },
+      "action": "SYSTEM_BOOT",
+      "invoice_id": null,
+      "proposal_id": null,
+      "state_from": null,
+      "state_to": null,
+      "severity": "INFO",
+      "rule": null,
+      "summary": "Recovery service started in DEMO_MODE",
+      "paypal_called": false
+    },
+    {
+      "event_id": "aud_000002",
+      "seq": 2,
+      "ts": "2026-11-02T15:00:00Z",
+      "actor": { "type": "SYSTEM", "id": "seed" },
+      "action": "INVOICES_LOADED",
+      "invoice_id": null,
+      "proposal_id": null,
+      "state_from": null,
+      "state_to": null,
+      "severity": "INFO",
+      "rule": null,
+      "summary": "5 invoices loaded (4 overdue)",
+      "paypal_called": false
+    },
+    {
+      "event_id": "aud_000003",
+      "seq": 3,
+      "ts": "2026-11-02T15:02:00Z",
+      "actor": { "type": "SYSTEM", "id": "recovery_service" },
+      "action": "PROPOSAL_DRAFTED",
+      "invoice_id": "INV-002",
+      "proposal_id": "prop_prev_01",
+      "state_from": "DRAFTED",
+      "state_to": "PENDING_MERCHANT",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "2 alternatives drafted within policy; awaiting merchant approval",
+      "paypal_called": false
+    },
+    {
+      "event_id": "aud_000004",
+      "seq": 4,
+      "ts": "2026-11-02T15:03:00Z",
+      "actor": { "type": "MERCHANT", "id": "merchant_demo" },
+      "action": "PROPOSAL_APPROVED",
+      "invoice_id": "INV-002",
+      "proposal_id": "prop_prev_01",
+      "state_from": "PENDING_MERCHANT",
+      "state_to": "APPROVED",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "Merchant approved settlement_discount",
+      "paypal_called": false
+    },
+    {
+      "event_id": "aud_000005",
+      "seq": 5,
+      "ts": "2026-11-02T15:04:00Z",
+      "actor": { "type": "SYSTEM", "id": "recovery_service" },
+      "action": "CUSTOMER_LINK_ISSUED",
+      "invoice_id": "INV-002",
+      "proposal_id": "prop_prev_01",
+      "state_from": "APPROVED",
+      "state_to": "PENDING_CUSTOMER",
+      "severity": "INFO",
+      "rule": null,
+      "summary": "One-time customer link issued",
+      "paypal_called": false
+    }
+  ],
+  "next_seq": 5
+}
