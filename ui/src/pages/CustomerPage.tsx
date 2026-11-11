@@ -1,40 +1,87 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getCustomerProposal, respondAsCustomer } from "../api/client";
-import type { CustomerProposalView, RespondOut } from "../types/api";
+import { ApiRequestError, getCustomerProposal, respondAsCustomer } from "../api/client";
+import type { CustomerProposalView, ProposalStatus, RespondOut } from "../types/api";
 import { formatMoney } from "../components/Money";
 import { SecurePlaceholder } from "../components/SecurePlaceholder";
+
+
+const TOKEN_ERRORS: Record<string, string> = {
+  TOKEN_EXPIRED: "This link has expired. Please contact the merchant for a new proposal.",
+  TOKEN_ALREADY_USED: "This link has already been used. Please contact the merchant if you need help.",
+};
+
+function isTokenError(e: unknown): e is ApiRequestError {
+  
+  return e instanceof ApiRequestError && e.code !== null && e.code in TOKEN_ERRORS;
+}
+
+function describe(e: unknown): string {
+  if (isTokenError(e)) return TOKEN_ERRORS[e.code as string];
+  return e instanceof Error ? e.message : "Unexpected error.";
+}
+
+interface Outcome {
+  icon: string;
+  title: string;
+  text: string;
+  showReceipt: boolean;
+}
+
+function outcomeFor(status: ProposalStatus): Outcome {
+  switch (status) {
+    case "PAID":
+      return { icon: "✅", title: "Payment Confirmed", text: "Your payment has been confirmed. Thank you.", showReceipt: true };
+    case "EXECUTED":
+      return { icon: "📨", title: "Repayment Plan Activated", text: "Your new invoice has been sent through PayPal. Payment is not confirmed yet.", showReceipt: true };
+    case "DECLINED":
+      return { icon: "🚫", title: "Offer Declined", text: "You have declined the repayment offer. The merchant will be notified.", showReceipt: false };
+    case "FAILED":
+      return { icon: "⚠️", title: "We could not activate your plan", text: "Something went wrong while creating the replacement invoice. Please contact the merchant.", showReceipt: false };
+    case "NEEDS_RECONCILIATION":
+      return { icon: "⏳", title: "Verification in progress", text: "Your request was received, but we are still verifying it with PayPal. Please contact the merchant if you do not hear back.", showReceipt: false };
+    default:
+      return { icon: "⏳", title: "Processing…", text: "We are finalizing your request. Please wait.", showReceipt: false };
+  }
+}
 
 export function CustomerPage() {
   const { token = "" } = useParams<{ token: string }>();
   const [view, setView] = useState<CustomerProposalView | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [responded, setResponded] = useState<RespondOut | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    let alive = true;
+    setLoading(true);
     getCustomerProposal(token)
-      .then(setView)
-      .catch((e) => setError(String(e)))
-      .finally(() => setLoading(false));
+      .then((v) => {
+        if (alive) setView(v);
+      })
+      .catch((e) => {
+        if (alive) setLoadError(describe(e));
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
   }, [token]);
 
   async function respond(decision: "ACCEPT" | "DECLINE") {
-    if (busy || responded) return; 
-    
+    if (busy || responded) return;
     setBusy(true);
-    setError(null);
-    
+    setActionError(null);
     try {
       const out = await respondAsCustomer(token, { decision });
-      setResponded(out); 
-    } catch (e: any) {
-      if (e.message && (e.message.includes("409") || e.message.includes("Conflict"))) {
-        setError("This link has already been used or has expired. Please contact the merchant for a new proposal.");
-      } else {
-        setError(e.message || "An unexpected error occurred.");
-      }
+      setResponded(out);
+    } catch (e) {
+      if (isTokenError(e)) setLoadError(describe(e));
+      else setActionError(describe(e));
     } finally {
       setBusy(false);
     }
@@ -42,12 +89,12 @@ export function CustomerPage() {
 
   if (loading) return <div className="page loading">Loading…</div>;
 
-  if (error) {
+  if (loadError) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <SecurePlaceholder 
           title="Link Unavailable"
-          description={error}
+          description={loadError}
           actionLabel="Return to Home"
           onAction={() => window.location.href = '/'}
         />
@@ -58,78 +105,53 @@ export function CustomerPage() {
   if (!view) return <div className="page">Link not found.</div>;
 
   if (responded) {
-    const isAccepted = responded.status === "ACCEPTED" || responded.status === "EXECUTED" || responded.status === "PAID";
-    const isDeclined = responded.status === "DECLINED";
+    const outcome = outcomeFor(responded.status);
     const isPaid = responded.status === "PAID";
 
     return (
       <div className="customer-portal-wrapper">
-        <div className="card" style={{ 
-          border: isAccepted ? '1px solid var(--status-success)' : '1px solid var(--border-subtle)', 
-          textAlign: 'center' 
-        }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px', color: isAccepted ? 'var(--status-success)' : 'inherit' }}>
-            {isPaid ? "✅" : isAccepted ? "📨" : isDeclined ? "🚫" : "⏳"}
-          </div>
-          
-          <h1 style={{ fontSize: '24px', marginBottom: '8px' }}>
-            {isPaid ? "Payment Confirmed!" : isAccepted ? "Repayment Plan Activated!" : isDeclined ? "Offer Declined" : "Processing..."}
-          </h1>
-          
-          <p className="muted" style={{ marginBottom: '32px' }}>
-            {isPaid 
-              ? "Your payment has been confirmed. Thank you."
-              : isAccepted 
-              ? "Your new invoice has been sent through PayPal. Payment is not confirmed yet."
-              : isDeclined 
-              ? "You have declined the repayment offer. The merchant will be notified."
-              : "We are finalizing your request with PayPal. Please wait."}
-          </p>
-          
-          {isAccepted && (
-            <div style={{ textAlign: 'left', background: 'var(--bg-app)', padding: '24px', borderRadius: 'var(--radius-sm)', marginBottom: '32px' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '20px', color: 'var(--text-primary)' }}>PayPal Sandbox Orchestration Details:</h3>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
+        <div className="card" style={{ border: outcome.showReceipt ? "1px solid var(--status-success)" : "1px solid var(--border-subtle)", textAlign: "center" }}>
+          <div style={{ fontSize: "48px", marginBottom: "16px" }}>{outcome.icon}</div>
+          <h1 style={{ fontSize: "24px", marginBottom: "8px" }}>{outcome.title}</h1>
+          <p className="muted" style={{ marginBottom: "32px" }}>{outcome.text}</p>
+
+          {outcome.showReceipt && (
+            <div style={{ textAlign: "left", background: "var(--bg-app)", padding: "24px", borderRadius: "var(--radius-sm)", marginBottom: "32px" }}>
+              <h3 style={{ fontSize: "15px", fontWeight: 600, marginBottom: "20px", color: "var(--text-primary)" }}>PayPal Sandbox Orchestration Details:</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", borderBottom: "1px solid var(--border-subtle)", paddingBottom: "12px" }}>
                   <span className="muted">Original Invoice:</span>
-                  <span style={{ fontWeight: 600, color: 'var(--text-tertiary)', textDecoration: 'line-through' }}>
+                  <span style={{ fontWeight: 600, color: "var(--text-tertiary)", textDecoration: "line-through" }}>
                     {responded.paypal?.original_invoice_id || "N/A"} (Cancelled)
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", borderBottom: "1px solid var(--border-subtle)", paddingBottom: "12px" }}>
                   <span className="muted">Replacement Invoice:</span>
-                  <span style={{ fontWeight: 600, color: 'var(--status-success)' }}>
+                  <span style={{ fontWeight: 600, color: "var(--status-success)" }}>
                     {responded.paypal?.new_invoice_id || "N/A"} (Active)
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", borderBottom: "1px solid var(--border-subtle)", paddingBottom: "12px" }}>
                   <span className="muted">Initial Due Today:</span>
                   <span style={{ fontWeight: 600 }}>{formatMoney(view.alternative.amount_due_now)} USD</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px" }}>
                   <span className="muted">Payment Status:</span>
                   {isPaid ? (
-                    <span className="pill pill-approved" style={{ fontSize: '11px', padding: '2px 8px' }}>CONFIRMED</span>
+                    <span className="pill pill-approved" style={{ fontSize: "11px", padding: "2px 8px" }}>CONFIRMED</span>
                   ) : (
-                    <span className="pill" style={{ fontSize: '11px', padding: '2px 8px', background: '#fef3c7', color: '#92400e' }}>AWAITING PAYMENT (Invoice Sent)</span>
+                    <span className="pill" style={{ fontSize: "11px", padding: "2px 8px", background: "#fef3c7", color: "#92400e" }}>AWAITING PAYMENT (Invoice Sent)</span>
                   )}
                 </div>
               </div>
             </div>
           )}
 
-          <button 
-            className="btn" 
-            style={{ width: '100%', padding: '14px' }}
-            onClick={() => window.location.href = '/'}
-          >
+          <button className="btn" style={{ width: "100%", padding: "14px" }} onClick={() => { window.location.href = "/"; }}>
             Return to Home
           </button>
-          
-          <p className="muted" style={{ fontSize: '12px', marginTop: '24px' }}>
-            {view.simulation_notice}
-          </p>
+          <p className="muted" style={{ fontSize: "12px", marginTop: "24px" }}>{view.simulation_notice}</p>
         </div>
       </div>
     );
@@ -194,8 +216,25 @@ export function CustomerPage() {
           </button>
         </div>
 
+        
+        {busy && (
+          <p className="muted" style={{ fontSize: "13px", textAlign: "center", marginTop: "16px" }}>
+            Processing your response. This can take a few seconds…
+          </p>
+        )}
+
+        
+        {actionError && (
+          <p role="alert" style={{ color: "#991b1b", fontSize: "13px", textAlign: "center", marginTop: "16px" }}>
+            {actionError}
+          </p>
+        )}
+
         <p className="muted" style={{ fontSize: '12px', textAlign: 'center', marginTop: '24px' }}>
           Simulation: this is a demo running on PayPal Sandbox. No real money is charged.
+        </p>
+        <p className="muted" style={{ fontSize: "12px", textAlign: "center", marginTop: "8px" }}>
+          {view.simulation_notice}
         </p>
       </div>
     </div>

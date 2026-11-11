@@ -5,36 +5,16 @@ export function SeverityPill(params: ICellRendererParams<AuditEvent, AuditEvent[
   const severity = params.value;
   if (!severity) return null;
 
-  const config = {
+  const palette = {
     CRITICAL: { bg: '#fef2f2', color: '#991b1b', dot: '#ef4444', border: '#fecaca' },
     WARN: { bg: '#fffbeb', color: '#92400e', dot: '#f59e0b', border: '#fde68a' },
     INFO: { bg: '#f0f9ff', color: '#075985', dot: '#0ea5e9', border: '#bae6fd' },
-  }[severity];
+  };
+  const config = palette[severity] ?? palette.INFO;
 
   return (
-    <div style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '6px',
-      background: config.bg, 
-      color: config.color,
-      padding: '6px 12px', 
-      borderRadius: '100px', 
-      fontSize: '11px', 
-      fontWeight: 700, 
-      letterSpacing: '0.5px',
-      height: '24px', 
-      whiteSpace: 'nowrap', 
-      border: `1px solid ${config.border}`
-    }}>
-      <div style={{ 
-        width: '6px', 
-        height: '6px', 
-        borderRadius: '50%', 
-        background: config.dot,
-        flexShrink: 0 
-      }} />
+    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', background: config.bg, color: config.color, padding: '6px 12px', borderRadius: '100px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px', height: '24px', whiteSpace: 'nowrap', border: `1px solid ${config.border}` }}>
+      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: config.dot, flexShrink: 0 }} />
       {severity}
     </div>
   );

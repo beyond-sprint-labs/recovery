@@ -12,7 +12,7 @@ export function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [proposing, setProposing] = useState<string | null>(null);
-  const [scenario, setScenario] = useState<string>("");
+  const [scenario, setScenario] = useState<string>("S01_partial_payment_now");
   const [message, setMessage] = useState<string>("I can pay 300 today and the rest in 3 monthly installments.");
   const navigate = useNavigate();
 
@@ -50,7 +50,6 @@ export function InvoicesPage() {
   );
 
   async function onPropose(invoice: Invoice) {
-    console.log("Enviando scenario_id:", scenario);
     setProposing(invoice.id);
     setError(null);
     try {
@@ -100,7 +99,7 @@ export function InvoicesPage() {
             <option value="S02_installments_request">S02 · Installments request (OK)</option>
             <option value="S03_exceeds_discount">S03 · Exceeds discount (BLOCKED)</option>
             <option value="S04_reasonable_discount">S04 · Reasonable discount (OK)</option>
-  <         option value="S11_text_mismatch">S11 · Text/number mismatch (BLOCKED)</option>
+            <option value="S11_text_mismatch">S11 · Text/number mismatch (BLOCKED)</option>
           </select>
         </label>
       </div>
@@ -113,11 +112,11 @@ export function InvoicesPage() {
           <div className="loading">Loading invoices…</div>
         ) : (
           <AgGridReact<Invoice>
+            theme="legacy"
             rowData={rows}
             columnDefs={columns}
             defaultColDef={{ sortable: true, filter: true, resizable: true }}
             getRowId={(p) => p.data.id}
-
             pagination={true}
             paginationPageSize={10}
             paginationPageSizeSelector={[10, 20, 50]}

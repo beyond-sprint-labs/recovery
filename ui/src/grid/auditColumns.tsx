@@ -24,6 +24,8 @@ export const auditColumns: ColDef<AuditEvent>[] = [
   { field: "rule.limit", headerName: "LIMIT", width: 90 },
   { field: "rule.attempted", headerName: "ATTEMPTED", width: 110 },
   { field: "paypal_called", headerName: "PAYPAL API?", width: 120, cellRenderer: PaypalCalled },
+  { field: "source", headerName: "SOURCE", width: 120, valueFormatter: (p) => p.value ?? "—" },
+  { field: "paypal_ref", headerName: "PAYPAL REF", width: 200, valueFormatter: (p) => p.value ?? "—" },
   { 
     field: "summary", headerName: "EVENT SUMMARY", flex: 1, minWidth: 350,
     cellStyle: { color: 'var(--text-primary)', fontSize: '13px', lineHeight: '1.4', whiteSpace: 'normal', display: 'flex', alignItems: 'center' }

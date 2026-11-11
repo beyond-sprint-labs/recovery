@@ -131,6 +131,7 @@ export function AuditPage() {
       {/* NOTE: There is no longer a `rowData={rows}` here. Only `applyTransaction`. */}
       <div className="grid-wrapper ag-theme-quartz audit-grid" style={{ height: "60vh" }}>
         <AgGridReact<AuditEvent>
+          theme="legacy"
           columnDefs={auditColumns}
           defaultColDef={{ sortable: true, filter: true, resizable: true }}
           getRowId={(p) => p.data.event_id}
