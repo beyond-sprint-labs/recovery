@@ -84,7 +84,7 @@
       "invoice_id": "INV-001",
       "paypal_called": false,
       "paypal_ref": null,
-      "proposal_id": "prop_4b339253aeca",
+      "proposal_id": "prop_cf56eea3ab42",
       "proposed_by": null,
       "rule": null,
       "seq": 1,
@@ -93,7 +93,7 @@
       "state_from": "DRAFTED",
       "state_to": "PENDING_MERCHANT",
       "summary": "2 alternatives drafted within policy; awaiting merchant approval",
-      "ts": "2026-11-11T00:37:28Z"
+      "ts": "2026-11-11T01:00:03Z"
     },
     "blocked_reasons": [],
     "currency": "USD",
@@ -113,7 +113,7 @@
       "status": "PASSED",
       "violations": []
     },
-    "proposal_id": "prop_4b339253aeca",
+    "proposal_id": "prop_cf56eea3ab42",
     "status": "PENDING_MERCHANT",
     "text_number_check": {
       "numbers_in_text": [
@@ -142,5 +142,5 @@
     "vary": "Origin"
   },
   "status_code": 200,
-  "ts": "2026-11-11T00:37:28.928357+00:00"
+  "ts": "2026-11-11T01:00:03.579319+00:00"
 }

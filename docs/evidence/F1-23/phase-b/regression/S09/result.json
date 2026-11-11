@@ -92,9 +92,9 @@
     }
   ],
   "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S09",
-  "executed_at": "2026-11-11T00:37:30.110221+00:00",
+  "executed_at": "2026-11-11T01:00:04.755964+00:00",
   "http_status": 200,
-  "proposal_id": "prop_141203e005e2",
+  "proposal_id": "prop_cb226c3f91d5",
   "scenario_id": "S09",
   "scenario_name": "S09_injection_system_override",
   "status": "PASS",

@@ -384,7 +384,7 @@
       "passed": true
     },
     {
-      "actual": "MOCK-INV-8AC32B72",
+      "actual": "MOCK-INV-09B97B43",
       "check": "mock PayPal invoice created",
       "critical": true,
       "expected": "MOCK-INV-*",
@@ -442,10 +442,10 @@
       "passed": true
     },
     {
-      "actual": "MOCK-INV-8AC32B72",
+      "actual": "MOCK-INV-09B97B43",
       "check": "final PayPal invoice id",
       "critical": true,
-      "expected": "MOCK-INV-8AC32B72",
+      "expected": "MOCK-INV-09B97B43",
       "note": null,
       "passed": true
     },
@@ -481,9 +481,9 @@
     }
   ],
   "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S01",
-  "executed_at": "2026-11-11T00:37:29.015801+00:00",
+  "executed_at": "2026-11-11T01:00:03.783397+00:00",
   "http_status": 200,
-  "proposal_id": "prop_4b339253aeca",
+  "proposal_id": "prop_cf56eea3ab42",
   "scenario_id": "S01",
   "scenario_name": "S01_partial_payment_now",
   "status": "PASS",

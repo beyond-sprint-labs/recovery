@@ -1,30 +1,51 @@
 {
-  "generated_at": "2026-11-11T00:35:00Z",
+  "generated_at": "2026-11-11T00:59:53Z",
   "phase": "B",
   "base_commit": "e86c0b2263e32814230a3d761ff25fb9ee6e20d4",
-  "branch": "qa/f1-23-phase-b",
+  "branch": "qa/f1-23-phase-a",
+  "consolidated_from": "qa/f1-23-phase-b",
+  "merge_commit": "080d0fbb9cb533dd048b9dbe1fe132fe2353d588",
   "checks": {
     "pytest": {
-      "command": ".venv\\Scripts\\python.exe -m pytest",
+      "command": ".venv\\Scripts\\python.exe -m pytest -q",
       "exit_code": 0,
       "summary": "1041 passed, 1 skipped, 53 subtests passed",
+      "junit": "1095 tests, 0 failures, 0 errors, 1 skipped",
       "log": "docs/evidence/F1-23/phase-b/automated/pytest-full.log"
     },
     "ruff_check": {
-      "command": ".venv\\Scripts\\ruff.exe check .",
+      "command": ".venv\\Scripts\\python.exe -m ruff check .",
       "exit_code": 0,
       "summary": "All checks passed",
       "log": "docs/evidence/F1-23/phase-b/automated/ruff-check.log"
     },
     "ruff_format_check": {
-      "command": ".venv\\Scripts\\ruff.exe format --check .",
+      "command": ".venv\\Scripts\\python.exe -m ruff format --check .",
       "exit_code": 0,
       "summary": "141 files already formatted",
       "log": "docs/evidence/F1-23/phase-b/automated/ruff-format-check.log"
     },
+    "phase_b_regression": {
+      "command": ".venv\\Scripts\\python.exe docs\\qa\\run_phase_b.py",
+      "exit_code": 0,
+      "summary": "12 scenarios; 12 PASS, including S10 PASS_WITH_OBSERVATION; 0 FAIL",
+      "log": "docs/evidence/F1-23/phase-b/automated/phase-b-regression.log"
+    },
+    "phase_b_platform": {
+      "command": ".venv\\Scripts\\python.exe docs\\qa\\run_phase_b_platform.py",
+      "exit_code": 1,
+      "summary": "18 / 19 PASS; expected FAIL for DEF-02 (DEPLOY.md omits the Sandbox bootstrap command)",
+      "evidence": "docs/evidence/F1-23/phase-b/platform-summary.json"
+    },
+    "phase_b_ui": {
+      "command": ".venv\\Scripts\\python.exe docs\\qa\\run_phase_b_ui.py",
+      "exit_code": 1,
+      "summary": "npm ci, Vite render and screenshots PASS; production build FAIL for DEF-03",
+      "evidence": "docs/evidence/F1-23/phase-b/ui/ui-summary.json"
+    },
     "phase_a_artefacts_preserved": {
       "files_checked": 78,
-      "result": "byte-for-byte identical to qa/f1-23-phase-a"
+      "result": "byte-for-byte identical to qa/f1-23-phase-a at fea5210"
     }
   }
 }

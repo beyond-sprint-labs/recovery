@@ -4,9 +4,9 @@
     "scenario_id": "S03_exceeds_discount"
   },
   "headers": {
-    "Idempotency-Key": "qa-f1-23-s03-932b8992ee7541928807bc95a894b134"
+    "Idempotency-Key": "qa-f1-23-s03-33460039ea8c4890aa80b4bc4c4ef2b9"
   },
   "method": "POST",
   "path": "/api/v1/invoices/INV-001/proposals",
-  "ts": "2026-11-11T00:37:29.323818+00:00"
+  "ts": "2026-11-11T01:00:04.031455+00:00"
 }

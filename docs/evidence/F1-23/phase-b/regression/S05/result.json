@@ -92,9 +92,9 @@
     }
   ],
   "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S05",
-  "executed_at": "2026-11-11T00:37:29.668350+00:00",
+  "executed_at": "2026-11-11T01:00:04.379378+00:00",
   "http_status": 200,
-  "proposal_id": "prop_58d3f489847f",
+  "proposal_id": "prop_e3b34a63ded4",
   "scenario_id": "S05",
   "scenario_name": "S05_ambiguous_slow_business",
   "status": "PASS",

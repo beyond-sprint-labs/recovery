@@ -4,9 +4,9 @@
     "scenario_id": "S11_text_mismatch"
   },
   "headers": {
-    "Idempotency-Key": "qa-f1-23-s11-ce17e246304c4cf8bad994cad40fd7c3"
+    "Idempotency-Key": "qa-f1-23-s11-e145930279cd4a90ba03fe63d5250dd3"
   },
   "method": "POST",
   "path": "/api/v1/invoices/INV-001/proposals",
-  "ts": "2026-11-11T00:37:30.296701+00:00"
+  "ts": "2026-11-11T01:00:04.869810+00:00"
 }

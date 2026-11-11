@@ -134,9 +134,9 @@
     }
   ],
   "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S11",
-  "executed_at": "2026-11-11T00:37:30.331353+00:00",
+  "executed_at": "2026-11-11T01:00:04.916008+00:00",
   "http_status": 200,
-  "proposal_id": "prop_096bb6863971",
+  "proposal_id": "prop_c04ebb88f293",
   "scenario_id": "S11",
   "scenario_name": "S11_text_mismatch",
   "status": "PASS",

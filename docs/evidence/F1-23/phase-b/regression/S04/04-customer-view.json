@@ -20,10 +20,10 @@
     },
     "currency": "USD",
     "customer_message": "Hello, your proposed settlement terms for invoice INV-001 have been approved. You can settle the full balance today with a single payment of $900.00 (10% discount). Please review the terms and confirm below.",
-    "expires_at": "2026-11-12T00:37:29Z",
+    "expires_at": "2026-11-12T01:00:04Z",
     "invoice_id": "INV-001",
     "original_balance": "1000.00",
-    "proposal_id": "prop_497c19a5172b",
+    "proposal_id": "prop_67cc96e2ae1f",
     "simulation_notice": "Simulation subject to merchant approval and customer acceptance. Not financial or legal advice.",
     "status": "PENDING_CUSTOMER"
   },
@@ -32,5 +32,5 @@
     "path": "/api/v1/customer/proposals/<redacted>"
   },
   "status_code": 200,
-  "ts": "2026-11-11T00:37:29.492758+00:00"
+  "ts": "2026-11-11T01:00:04.223686+00:00"
 }

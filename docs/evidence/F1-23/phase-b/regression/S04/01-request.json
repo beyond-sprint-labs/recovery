@@ -4,9 +4,9 @@
     "scenario_id": "S04_reasonable_discount"
   },
   "headers": {
-    "Idempotency-Key": "qa-f1-23-s04-af6f69897ded4ff6a4d18d097de98756"
+    "Idempotency-Key": "qa-f1-23-s04-365bc5eca0cd4f9790676de9dde701f6"
   },
   "method": "POST",
   "path": "/api/v1/invoices/INV-001/proposals",
-  "ts": "2026-11-11T00:37:29.442917+00:00"
+  "ts": "2026-11-11T01:00:04.150881+00:00"
 }

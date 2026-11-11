@@ -1,8 +1,9 @@
 # F1-23 Phase B - Executed Matrix
 
-Generated: 2026-11-11T00:37:30.480103+00:00
+Generated: 2026-11-11T01:00:05.050315+00:00
 
 Base: `main` at `e86c0b2` (includes F1-20 and F1-11).
+Consolidated into `qa/f1-23-phase-a` at merge commit `080d0fb`.
 Environment: local SQLite, demo seed, `PAYPAL_MODE=mock`, `AGENT_MODE=scripted`.
 Phase A evidence is preserved under `docs/evidence/F1-23/S01` ... `S12`.
 

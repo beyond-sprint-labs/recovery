@@ -8,7 +8,7 @@
   "environment": {
     "AGENT_MODE": "llm",
     "APP_ENV": "production",
-    "DATABASE_URL": "sqlite:///C:/Users/PC/AppData/Local/Temp/f1-23-b-prod-guard-f6k_vd7w/qa.db",
+    "DATABASE_URL": "sqlite:///C:/Users/PC/AppData/Local/Temp/f1-23-b-prod-guard-z8wp5ssf/qa.db",
     "DEMO_MODE": "true",
     "LLM_API_KEY": "fake-test-key",
     "LLM_MODEL": "gemini-test",

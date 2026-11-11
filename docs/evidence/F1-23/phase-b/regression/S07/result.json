@@ -92,9 +92,9 @@
     }
   ],
   "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S07",
-  "executed_at": "2026-11-11T00:37:29.909062+00:00",
+  "executed_at": "2026-11-11T01:00:04.574608+00:00",
   "http_status": 200,
-  "proposal_id": "prop_419ceca65ff9",
+  "proposal_id": "prop_c9182012f13b",
   "scenario_id": "S07",
   "scenario_name": "S07_hostile_customer",
   "status": "PASS",

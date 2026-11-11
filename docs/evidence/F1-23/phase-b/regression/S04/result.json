@@ -334,7 +334,7 @@
       "passed": true
     },
     {
-      "actual": "MOCK-INV-528EB71C",
+      "actual": "MOCK-INV-53A350A2",
       "check": "mock PayPal invoice created",
       "critical": true,
       "expected": "MOCK-INV-*",
@@ -392,10 +392,10 @@
       "passed": true
     },
     {
-      "actual": "MOCK-INV-528EB71C",
+      "actual": "MOCK-INV-53A350A2",
       "check": "final PayPal invoice id",
       "critical": true,
-      "expected": "MOCK-INV-528EB71C",
+      "expected": "MOCK-INV-53A350A2",
       "note": null,
       "passed": true
     },
@@ -431,9 +431,9 @@
     }
   ],
   "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S04",
-  "executed_at": "2026-11-11T00:37:29.554236+00:00",
+  "executed_at": "2026-11-11T01:00:04.296359+00:00",
   "http_status": 200,
-  "proposal_id": "prop_497c19a5172b",
+  "proposal_id": "prop_67cc96e2ae1f",
   "scenario_id": "S04",
   "scenario_name": "S04_reasonable_discount",
   "status": "PASS",

@@ -25,7 +25,7 @@
     "response": "docs/evidence/F1-23/phase-b/regression/S10/02-proposal-response.json",
     "result": "docs/evidence/F1-23/phase-b/regression/S10/result.json"
   },
-  "generated_at": "2026-11-11T00:37:30.474019+00:00",
+  "generated_at": "2026-11-11T01:00:05.039613+00:00",
   "phase_a_status": "PASS_WITH_OBSERVATION",
   "phase_b_status": "OPEN",
   "requires_application_change_if_traceability_required": true,

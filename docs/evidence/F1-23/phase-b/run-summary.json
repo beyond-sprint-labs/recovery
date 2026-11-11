@@ -56,7 +56,7 @@
       "response": "docs/evidence/F1-23/phase-b/regression/S10/02-proposal-response.json",
       "result": "docs/evidence/F1-23/phase-b/regression/S10/result.json"
     },
-    "generated_at": "2026-11-11T00:37:30.474019+00:00",
+    "generated_at": "2026-11-11T01:00:05.039613+00:00",
     "phase_a_status": "PASS_WITH_OBSERVATION",
     "phase_b_status": "OPEN",
     "requires_application_change_if_traceability_required": true,
@@ -64,11 +64,11 @@
   },
   "environment": {
     "base_branch": "main",
-    "base_commit": "e86c0b2263e32814230a3d761ff25fb9ee6e20d4",
-    "generated_at": "2026-11-11T00:37:26.840581+00:00",
+    "base_commit": "080d0fbb9cb533dd048b9dbe1fe132fe2353d588",
+    "generated_at": "2026-11-11T01:00:00.890304+00:00",
     "phase": "B",
     "phase_a_branch": "qa/f1-23-phase-a",
-    "phase_a_commit": "fea5210d9fabf5e0320d8c07137b6c9b0e27d300",
+    "phase_a_commit": "080d0fbb9cb533dd048b9dbe1fe132fe2353d588",
     "platform": "win32",
     "python": "3.12.15 (main, Oct  9 2026, 15:21:55) [MSC v.1944 64 bit (AMD64)]",
     "settings": {
@@ -80,7 +80,7 @@
       "PAYPAL_MODE": "mock"
     }
   },
-  "generated_at": "2026-11-11T00:37:30.474019+00:00",
+  "generated_at": "2026-11-11T01:00:05.041737+00:00",
   "phase": "B",
   "results": [
     {
@@ -199,9 +199,9 @@
         },
         {
           "actual": {
-            "INV-001": "MOCK-INV-C7CDFE08",
-            "INV-002": "MOCK-INV-346A9E55",
-            "INV-003": "MOCK-INV-A605D592"
+            "INV-001": "MOCK-INV-31852E80",
+            "INV-002": "MOCK-INV-FA8294E4",
+            "INV-003": "MOCK-INV-1E931B59"
           },
           "check": "overdue invoices linked to mock PayPal",
           "critical": true,
@@ -311,7 +311,7 @@
         }
       ],
       "evidence_dir": "docs/evidence/F1-23/phase-b/regression/SEED",
-      "executed_at": "2026-11-11T00:37:28.865795+00:00",
+      "executed_at": "2026-11-11T01:00:03.492601+00:00",
       "http_status": 200,
       "proposal_id": null,
       "scenario_id": "SEED",
@@ -710,7 +710,7 @@
           "passed": true
         },
         {
-          "actual": "MOCK-INV-8AC32B72",
+          "actual": "MOCK-INV-09B97B43",
           "check": "mock PayPal invoice created",
           "critical": true,
           "expected": "MOCK-INV-*",
@@ -768,10 +768,10 @@
           "passed": true
         },
         {
-          "actual": "MOCK-INV-8AC32B72",
+          "actual": "MOCK-INV-09B97B43",
           "check": "final PayPal invoice id",
           "critical": true,
-          "expected": "MOCK-INV-8AC32B72",
+          "expected": "MOCK-INV-09B97B43",
           "note": null,
           "passed": true
         },
@@ -807,9 +807,9 @@
         }
       ],
       "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S01",
-      "executed_at": "2026-11-11T00:37:29.015801+00:00",
+      "executed_at": "2026-11-11T01:00:03.783397+00:00",
       "http_status": 200,
-      "proposal_id": "prop_4b339253aeca",
+      "proposal_id": "prop_cf56eea3ab42",
       "scenario_id": "S01",
       "scenario_name": "S01_partial_payment_now",
       "status": "PASS",
@@ -1150,7 +1150,7 @@
           "passed": true
         },
         {
-          "actual": "MOCK-INV-A0AE1BAC",
+          "actual": "MOCK-INV-8C486A98",
           "check": "mock PayPal invoice created",
           "critical": true,
           "expected": "MOCK-INV-*",
@@ -1208,10 +1208,10 @@
           "passed": true
         },
         {
-          "actual": "MOCK-INV-A0AE1BAC",
+          "actual": "MOCK-INV-8C486A98",
           "check": "final PayPal invoice id",
           "critical": true,
-          "expected": "MOCK-INV-A0AE1BAC",
+          "expected": "MOCK-INV-8C486A98",
           "note": null,
           "passed": true
         },
@@ -1247,9 +1247,9 @@
         }
       ],
       "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S02",
-      "executed_at": "2026-11-11T00:37:29.242705+00:00",
+      "executed_at": "2026-11-11T01:00:03.971687+00:00",
       "http_status": 200,
-      "proposal_id": "prop_621df137c687",
+      "proposal_id": "prop_80c37966094e",
       "scenario_id": "S02",
       "scenario_name": "S02_installments_request",
       "status": "PASS",
@@ -1380,9 +1380,9 @@
         }
       ],
       "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S03",
-      "executed_at": "2026-11-11T00:37:29.363956+00:00",
+      "executed_at": "2026-11-11T01:00:04.094686+00:00",
       "http_status": 200,
-      "proposal_id": "prop_5a2c2ae2d435",
+      "proposal_id": "prop_fdf6b830f6c4",
       "scenario_id": "S03",
       "scenario_name": "S03_exceeds_discount",
       "status": "PASS",
@@ -1731,7 +1731,7 @@
           "passed": true
         },
         {
-          "actual": "MOCK-INV-528EB71C",
+          "actual": "MOCK-INV-53A350A2",
           "check": "mock PayPal invoice created",
           "critical": true,
           "expected": "MOCK-INV-*",
@@ -1789,10 +1789,10 @@
           "passed": true
         },
         {
-          "actual": "MOCK-INV-528EB71C",
+          "actual": "MOCK-INV-53A350A2",
           "check": "final PayPal invoice id",
           "critical": true,
-          "expected": "MOCK-INV-528EB71C",
+          "expected": "MOCK-INV-53A350A2",
           "note": null,
           "passed": true
         },
@@ -1828,9 +1828,9 @@
         }
       ],
       "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S04",
-      "executed_at": "2026-11-11T00:37:29.554236+00:00",
+      "executed_at": "2026-11-11T01:00:04.296359+00:00",
       "http_status": 200,
-      "proposal_id": "prop_497c19a5172b",
+      "proposal_id": "prop_67cc96e2ae1f",
       "scenario_id": "S04",
       "scenario_name": "S04_reasonable_discount",
       "status": "PASS",
@@ -1937,9 +1937,9 @@
         }
       ],
       "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S05",
-      "executed_at": "2026-11-11T00:37:29.668350+00:00",
+      "executed_at": "2026-11-11T01:00:04.379378+00:00",
       "http_status": 200,
-      "proposal_id": "prop_58d3f489847f",
+      "proposal_id": "prop_e3b34a63ded4",
       "scenario_id": "S05",
       "scenario_name": "S05_ambiguous_slow_business",
       "status": "PASS",
@@ -2046,9 +2046,9 @@
         }
       ],
       "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S06",
-      "executed_at": "2026-11-11T00:37:29.790624+00:00",
+      "executed_at": "2026-11-11T01:00:04.465749+00:00",
       "http_status": 200,
-      "proposal_id": "prop_d16666a700ab",
+      "proposal_id": "prop_41e6f1626e92",
       "scenario_id": "S06",
       "scenario_name": "S06_ambiguous_partial_later",
       "status": "PASS",
@@ -2155,9 +2155,9 @@
         }
       ],
       "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S07",
-      "executed_at": "2026-11-11T00:37:29.909062+00:00",
+      "executed_at": "2026-11-11T01:00:04.574608+00:00",
       "http_status": 200,
-      "proposal_id": "prop_419ceca65ff9",
+      "proposal_id": "prop_c9182012f13b",
       "scenario_id": "S07",
       "scenario_name": "S07_hostile_customer",
       "status": "PASS",
@@ -2264,9 +2264,9 @@
         }
       ],
       "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S08",
-      "executed_at": "2026-11-11T00:37:29.989663+00:00",
+      "executed_at": "2026-11-11T01:00:04.677755+00:00",
       "http_status": 200,
-      "proposal_id": "prop_63c18e5a20c5",
+      "proposal_id": "prop_f304ffc407f1",
       "scenario_id": "S08",
       "scenario_name": "S08_injection_ignore_instructions",
       "status": "PASS",
@@ -2373,9 +2373,9 @@
         }
       ],
       "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S09",
-      "executed_at": "2026-11-11T00:37:30.110221+00:00",
+      "executed_at": "2026-11-11T01:00:04.755964+00:00",
       "http_status": 200,
-      "proposal_id": "prop_141203e005e2",
+      "proposal_id": "prop_cb226c3f91d5",
       "scenario_id": "S09",
       "scenario_name": "S09_injection_system_override",
       "status": "PASS",
@@ -2482,9 +2482,9 @@
         }
       ],
       "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S10",
-      "executed_at": "2026-11-11T00:37:30.222519+00:00",
+      "executed_at": "2026-11-11T01:00:04.833576+00:00",
       "http_status": 200,
-      "proposal_id": "prop_930e7784d679",
+      "proposal_id": "prop_1bd1eaa21a67",
       "scenario_id": "S10",
       "scenario_name": "S10_invalid_discount_150",
       "status": "PASS_WITH_OBSERVATION",
@@ -2633,9 +2633,9 @@
         }
       ],
       "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S11",
-      "executed_at": "2026-11-11T00:37:30.331353+00:00",
+      "executed_at": "2026-11-11T01:00:04.916008+00:00",
       "http_status": 200,
-      "proposal_id": "prop_096bb6863971",
+      "proposal_id": "prop_c04ebb88f293",
       "scenario_id": "S11",
       "scenario_name": "S11_text_mismatch",
       "status": "PASS",
@@ -2778,9 +2778,9 @@
         }
       ],
       "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S12",
-      "executed_at": "2026-11-11T00:37:30.400639+00:00",
+      "executed_at": "2026-11-11T01:00:05.011588+00:00",
       "http_status": 200,
-      "proposal_id": "prop_db977d7b8c21",
+      "proposal_id": "prop_8fd3271393f5",
       "scenario_id": "S12",
       "scenario_name": "S12_hidden_characters",
       "status": "PASS",

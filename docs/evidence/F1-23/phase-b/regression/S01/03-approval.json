@@ -13,7 +13,7 @@
         "invoice_id": "INV-001",
         "paypal_called": false,
         "paypal_ref": null,
-        "proposal_id": "prop_4b339253aeca",
+        "proposal_id": "prop_cf56eea3ab42",
         "proposed_by": null,
         "rule": null,
         "seq": 2,
@@ -22,7 +22,7 @@
         "state_from": "PENDING_MERCHANT",
         "state_to": "APPROVED",
         "summary": "Merchant approved the down payment + installments option. Merchant note: F1-23 Phase A QA",
-        "ts": "2026-11-11T00:37:28Z"
+        "ts": "2026-11-11T01:00:03Z"
       },
       {
         "action": "CUSTOMER_LINK_ISSUED",
@@ -35,7 +35,7 @@
         "invoice_id": "INV-001",
         "paypal_called": false,
         "paypal_ref": null,
-        "proposal_id": "prop_4b339253aeca",
+        "proposal_id": "prop_cf56eea3ab42",
         "proposed_by": null,
         "rule": null,
         "seq": 3,
@@ -44,12 +44,12 @@
         "state_from": "APPROVED",
         "state_to": "PENDING_CUSTOMER",
         "summary": "Single-use customer link issued; expires in 24 hours",
-        "ts": "2026-11-11T00:37:28Z"
+        "ts": "2026-11-11T01:00:03Z"
       }
     ],
     "customer_link": "http://localhost:8000/customer/<redacted>",
-    "customer_token_expires_at": "2026-11-12T00:37:28Z",
-    "proposal_id": "prop_4b339253aeca",
+    "customer_token_expires_at": "2026-11-12T01:00:03Z",
+    "proposal_id": "prop_cf56eea3ab42",
     "status": "PENDING_CUSTOMER"
   },
   "request": {
@@ -57,5 +57,5 @@
     "note": "F1-23 Phase A QA"
   },
   "status_code": 200,
-  "ts": "2026-11-11T00:37:28.938726+00:00"
+  "ts": "2026-11-11T01:00:03.600412+00:00"
 }

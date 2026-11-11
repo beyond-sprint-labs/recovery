@@ -114,9 +114,9 @@
     },
     {
       "actual": {
-        "INV-001": "MOCK-INV-C7CDFE08",
-        "INV-002": "MOCK-INV-346A9E55",
-        "INV-003": "MOCK-INV-A605D592"
+        "INV-001": "MOCK-INV-31852E80",
+        "INV-002": "MOCK-INV-FA8294E4",
+        "INV-003": "MOCK-INV-1E931B59"
       },
       "check": "overdue invoices linked to mock PayPal",
       "critical": true,
@@ -226,7 +226,7 @@
     }
   ],
   "evidence_dir": "docs/evidence/F1-23/phase-b/regression/SEED",
-  "executed_at": "2026-11-11T00:37:28.865795+00:00",
+  "executed_at": "2026-11-11T01:00:03.492601+00:00",
   "http_status": 200,
   "proposal_id": null,
   "scenario_id": "SEED",

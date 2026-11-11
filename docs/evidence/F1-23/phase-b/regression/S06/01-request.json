@@ -4,9 +4,9 @@
     "scenario_id": "S06_ambiguous_partial_later"
   },
   "headers": {
-    "Idempotency-Key": "qa-f1-23-s06-faa7d846dd56427cb9a1c7921345bbe3"
+    "Idempotency-Key": "qa-f1-23-s06-e2c0c08368d34e83addbe8c6599ff2e3"
   },
   "method": "POST",
   "path": "/api/v1/invoices/INV-001/proposals",
-  "ts": "2026-11-11T00:37:29.750494+00:00"
+  "ts": "2026-11-11T01:00:04.419964+00:00"
 }

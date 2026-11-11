@@ -4,9 +4,9 @@
     "scenario_id": "S07_hostile_customer"
   },
   "headers": {
-    "Idempotency-Key": "qa-f1-23-s07-d5cf2290e6004ef2bfbf880d3950f99e"
+    "Idempotency-Key": "qa-f1-23-s07-91cc854c2cf64d8bb034bb60b343b511"
   },
   "method": "POST",
   "path": "/api/v1/invoices/INV-001/proposals",
-  "ts": "2026-11-11T00:37:29.871192+00:00"
+  "ts": "2026-11-11T01:00:04.512538+00:00"
 }

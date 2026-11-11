@@ -4,9 +4,9 @@
     "scenario_id": "S12_hidden_characters"
   },
   "headers": {
-    "Idempotency-Key": "qa-f1-23-s12-78386e4caf4d4669a0b94ff3d78e141a"
+    "Idempotency-Key": "qa-f1-23-s12-fe7d24d0c759420495329661ca7a4a31"
   },
   "method": "POST",
   "path": "/api/v1/invoices/INV-001/proposals",
-  "ts": "2026-11-11T00:37:30.365039+00:00"
+  "ts": "2026-11-11T01:00:04.957088+00:00"
 }

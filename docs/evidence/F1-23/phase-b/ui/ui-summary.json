@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-11-11T00:29:11Z",
+  "generated_at": "2026-11-11T00:55:02Z",
   "phase": "B",
   "ui_branch": "origin/feat/ui-final-integration",
   "ui_commit": "5f88861aff56fe158c9b4a8cf7a99f7eb904b0bf",
-  "worktree": "C:\\Users\\PC\\AppData\\Local\\Temp\\recovery-ui-phase-b-da196bbfecb34c9a8ae1802eea28d69d",
+  "worktree": "C:\\Users\\PC\\AppData\\Local\\Temp\\recovery-ui-phase-b-d694db6def814f10bd5f05ddab422a75",
   "checks": [
     {
       "check": "npm ci succeeds",

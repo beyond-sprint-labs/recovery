@@ -12,7 +12,7 @@
         "invoice_id": "INV-001",
         "paypal_called": false,
         "paypal_ref": null,
-        "proposal_id": "prop_621df137c687",
+        "proposal_id": "prop_80c37966094e",
         "proposed_by": null,
         "rule": null,
         "seq": 1,
@@ -21,7 +21,7 @@
         "state_from": "DRAFTED",
         "state_to": "PENDING_MERCHANT",
         "summary": "2 alternatives drafted within policy; awaiting merchant approval",
-        "ts": "2026-11-11T00:37:29Z"
+        "ts": "2026-11-11T01:00:03Z"
       },
       {
         "action": "PROPOSAL_APPROVED",
@@ -34,7 +34,7 @@
         "invoice_id": "INV-001",
         "paypal_called": false,
         "paypal_ref": null,
-        "proposal_id": "prop_621df137c687",
+        "proposal_id": "prop_80c37966094e",
         "proposed_by": null,
         "rule": null,
         "seq": 2,
@@ -43,7 +43,7 @@
         "state_from": "PENDING_MERCHANT",
         "state_to": "APPROVED",
         "summary": "Merchant approved the down payment + installments option. Merchant note: F1-23 Phase A QA",
-        "ts": "2026-11-11T00:37:29Z"
+        "ts": "2026-11-11T01:00:03Z"
       },
       {
         "action": "CUSTOMER_LINK_ISSUED",
@@ -56,7 +56,7 @@
         "invoice_id": "INV-001",
         "paypal_called": false,
         "paypal_ref": null,
-        "proposal_id": "prop_621df137c687",
+        "proposal_id": "prop_80c37966094e",
         "proposed_by": null,
         "rule": null,
         "seq": 3,
@@ -65,7 +65,7 @@
         "state_from": "APPROVED",
         "state_to": "PENDING_CUSTOMER",
         "summary": "Single-use customer link issued; expires in 24 hours",
-        "ts": "2026-11-11T00:37:29Z"
+        "ts": "2026-11-11T01:00:03Z"
       },
       {
         "action": "CUSTOMER_ACCEPTED",
@@ -78,7 +78,7 @@
         "invoice_id": "INV-001",
         "paypal_called": false,
         "paypal_ref": null,
-        "proposal_id": "prop_621df137c687",
+        "proposal_id": "prop_80c37966094e",
         "proposed_by": null,
         "rule": null,
         "seq": 4,
@@ -87,7 +87,7 @@
         "state_from": "PENDING_CUSTOMER",
         "state_to": "ACCEPTED",
         "summary": "Customer accepted the pre-approved option",
-        "ts": "2026-11-11T00:37:29Z"
+        "ts": "2026-11-11T01:00:03Z"
       },
       {
         "action": "EXECUTION_STARTED",
@@ -100,7 +100,7 @@
         "invoice_id": "INV-001",
         "paypal_called": false,
         "paypal_ref": null,
-        "proposal_id": "prop_621df137c687",
+        "proposal_id": "prop_80c37966094e",
         "proposed_by": null,
         "rule": null,
         "seq": 5,
@@ -109,7 +109,7 @@
         "state_from": "ACCEPTED",
         "state_to": "EXECUTING",
         "summary": "Execution started; replacing the original invoice in PayPal",
-        "ts": "2026-11-11T00:37:29Z"
+        "ts": "2026-11-11T01:00:03Z"
       },
       {
         "action": "PAYPAL_DRAFT_CREATED",
@@ -121,8 +121,8 @@
         "event_id": "aud_000006",
         "invoice_id": "INV-001",
         "paypal_called": true,
-        "paypal_ref": "MOCK-INV-A0AE1BAC",
-        "proposal_id": "prop_621df137c687",
+        "paypal_ref": "MOCK-INV-8C486A98",
+        "proposal_id": "prop_80c37966094e",
         "proposed_by": null,
         "rule": null,
         "seq": 6,
@@ -130,8 +130,8 @@
         "source": null,
         "state_from": null,
         "state_to": null,
-        "summary": "Draft MOCK-INV-A0AE1BAC created.",
-        "ts": "2026-11-11T00:37:29Z"
+        "summary": "Draft MOCK-INV-8C486A98 created.",
+        "ts": "2026-11-11T01:00:03Z"
       },
       {
         "action": "PAYPAL_ORIGINAL_CANCELLED",
@@ -143,8 +143,8 @@
         "event_id": "aud_000007",
         "invoice_id": "INV-001",
         "paypal_called": true,
-        "paypal_ref": "MOCK-INV-3CCA3534",
-        "proposal_id": "prop_621df137c687",
+        "paypal_ref": "MOCK-INV-31B84EFE",
+        "proposal_id": "prop_80c37966094e",
         "proposed_by": null,
         "rule": null,
         "seq": 7,
@@ -152,8 +152,8 @@
         "source": null,
         "state_from": null,
         "state_to": null,
-        "summary": "Original MOCK-INV-3CCA3534 cancelled.",
-        "ts": "2026-11-11T00:37:29Z"
+        "summary": "Original MOCK-INV-31B84EFE cancelled.",
+        "ts": "2026-11-11T01:00:03Z"
       },
       {
         "action": "PAYPAL_INVOICE_SENT",
@@ -165,8 +165,8 @@
         "event_id": "aud_000008",
         "invoice_id": "INV-001",
         "paypal_called": true,
-        "paypal_ref": "MOCK-INV-A0AE1BAC",
-        "proposal_id": "prop_621df137c687",
+        "paypal_ref": "MOCK-INV-8C486A98",
+        "proposal_id": "prop_80c37966094e",
         "proposed_by": null,
         "rule": null,
         "seq": 8,
@@ -174,8 +174,8 @@
         "source": null,
         "state_from": null,
         "state_to": null,
-        "summary": "Draft MOCK-INV-A0AE1BAC sent to customer.",
-        "ts": "2026-11-11T00:37:29Z"
+        "summary": "Draft MOCK-INV-8C486A98 sent to customer.",
+        "ts": "2026-11-11T01:00:03Z"
       },
       {
         "action": "EXECUTION_COMPLETED",
@@ -187,8 +187,8 @@
         "event_id": "aud_000009",
         "invoice_id": "INV-001",
         "paypal_called": true,
-        "paypal_ref": "MOCK-INV-A0AE1BAC",
-        "proposal_id": "prop_621df137c687",
+        "paypal_ref": "MOCK-INV-8C486A98",
+        "proposal_id": "prop_80c37966094e",
         "proposed_by": null,
         "rule": null,
         "seq": 9,
@@ -197,7 +197,7 @@
         "state_from": "EXECUTING",
         "state_to": "EXECUTED",
         "summary": "Replacement completed successfully.",
-        "ts": "2026-11-11T00:37:29Z"
+        "ts": "2026-11-11T01:00:03Z"
       },
       {
         "action": "PAYMENT_CONFIRMED",
@@ -209,8 +209,8 @@
         "event_id": "aud_000010",
         "invoice_id": "INV-001",
         "paypal_called": true,
-        "paypal_ref": "MOCK-INV-A0AE1BAC",
-        "proposal_id": "prop_621df137c687",
+        "paypal_ref": "MOCK-INV-8C486A98",
+        "proposal_id": "prop_80c37966094e",
         "proposed_by": null,
         "rule": null,
         "seq": 10,
@@ -218,12 +218,12 @@
         "source": "WEBHOOK",
         "state_from": "EXECUTED",
         "state_to": "PAID",
-        "summary": "Payment confirmed via webhook on PayPal invoice MOCK-INV-A0AE1BAC",
-        "ts": "2026-11-11T00:37:29Z"
+        "summary": "Payment confirmed via webhook on PayPal invoice MOCK-INV-8C486A98",
+        "ts": "2026-11-11T01:00:03Z"
       }
     ],
     "next_seq": 10
   },
   "status_code": 200,
-  "ts": "2026-11-11T00:37:29.241748+00:00"
+  "ts": "2026-11-11T01:00:03.970691+00:00"
 }

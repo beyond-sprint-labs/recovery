@@ -92,9 +92,9 @@
     }
   ],
   "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S06",
-  "executed_at": "2026-11-11T00:37:29.790624+00:00",
+  "executed_at": "2026-11-11T01:00:04.465749+00:00",
   "http_status": 200,
-  "proposal_id": "prop_d16666a700ab",
+  "proposal_id": "prop_41e6f1626e92",
   "scenario_id": "S06",
   "scenario_name": "S06_ambiguous_partial_later",
   "status": "PASS",

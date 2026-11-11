@@ -14,7 +14,7 @@
       "invoice_id": "INV-001",
       "paypal_called": false,
       "paypal_ref": null,
-      "proposal_id": "prop_096bb6863971",
+      "proposal_id": "prop_c04ebb88f293",
       "proposed_by": {
         "id": "agent_v1",
         "mode": "DEMO",
@@ -33,7 +33,7 @@
       "state_from": "DRAFTED",
       "state_to": "BLOCKED",
       "summary": "AI-generated text contains figures not produced by the finance engine (850.00); PayPal not called",
-      "ts": "2026-11-11T00:37:30Z"
+      "ts": "2026-11-11T01:00:04Z"
     },
     "blocked_reasons": [
       {
@@ -61,7 +61,7 @@
       "status": "PASSED",
       "violations": []
     },
-    "proposal_id": "prop_096bb6863971",
+    "proposal_id": "prop_c04ebb88f293",
     "status": "BLOCKED",
     "text_number_check": {
       "numbers_in_text": [
@@ -93,5 +93,5 @@
     "vary": "Origin"
   },
   "status_code": 200,
-  "ts": "2026-11-11T00:37:30.319168+00:00"
+  "ts": "2026-11-11T01:00:04.899670+00:00"
 }

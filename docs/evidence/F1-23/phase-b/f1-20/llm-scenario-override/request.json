@@ -4,7 +4,7 @@
     "scenario_id": "S01_partial_payment_now"
   },
   "headers": {
-    "Idempotency-Key": "qa-f1-23-b-llm-afab282a162f42e0b98edf51eda97c53"
+    "Idempotency-Key": "qa-f1-23-b-llm-b9aed425fb3845af90cd230d0db95ec0"
   },
   "method": "POST",
   "path": "/api/v1/invoices/INV-001/proposals"

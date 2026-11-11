@@ -7,7 +7,7 @@
   ],
   "environment": {
     "APP_ENV": "local",
-    "DATABASE_URL": "sqlite:///C:/Users/PC/AppData/Local/Temp/f1-23-b-sandbox-url-eqib0ian/qa.db",
+    "DATABASE_URL": "sqlite:///C:/Users/PC/AppData/Local/Temp/f1-23-b-sandbox-url-uz7ycnuc/qa.db",
     "DEMO_MODE": "false",
     "PAYPAL_BASE_URL": "https://api-m.paypal.com",
     "PAYPAL_MODE": "real",

@@ -4,9 +4,9 @@
     "scenario_id": "S02_installments_request"
   },
   "headers": {
-    "Idempotency-Key": "qa-f1-23-s02-983278a927384b88b0e80c30003cb12e"
+    "Idempotency-Key": "qa-f1-23-s02-3b321a23fe2144c19ce576108911a021"
   },
   "method": "POST",
   "path": "/api/v1/invoices/INV-001/proposals",
-  "ts": "2026-11-11T00:37:29.127754+00:00"
+  "ts": "2026-11-11T01:00:03.827330+00:00"
 }

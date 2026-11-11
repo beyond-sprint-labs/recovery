@@ -12,7 +12,7 @@
         "invoice_id": "INV-001",
         "paypal_called": false,
         "paypal_ref": null,
-        "proposal_id": "prop_db977d7b8c21",
+        "proposal_id": "prop_8fd3271393f5",
         "proposed_by": null,
         "rule": {
           "attempted": "1",
@@ -27,7 +27,7 @@
         "state_from": null,
         "state_to": null,
         "summary": "Removed 1 hidden control/format character(s) from the customer message",
-        "ts": "2026-11-11T00:37:30Z"
+        "ts": "2026-11-11T01:00:04Z"
       },
       {
         "action": "PROPOSAL_BLOCKED",
@@ -40,7 +40,7 @@
         "invoice_id": "INV-001",
         "paypal_called": false,
         "paypal_ref": null,
-        "proposal_id": "prop_db977d7b8c21",
+        "proposal_id": "prop_8fd3271393f5",
         "proposed_by": {
           "id": "agent_v1",
           "mode": "DEMO",
@@ -59,11 +59,11 @@
         "state_from": "DRAFTED",
         "state_to": "BLOCKED",
         "summary": "AI-proposed 40% settlement discount exceeds merchant limit of 15%; PayPal not called",
-        "ts": "2026-11-11T00:37:30Z"
+        "ts": "2026-11-11T01:00:04Z"
       }
     ],
     "next_seq": 2
   },
   "status_code": 200,
-  "ts": "2026-11-11T00:37:30.399635+00:00"
+  "ts": "2026-11-11T01:00:05.009927+00:00"
 }

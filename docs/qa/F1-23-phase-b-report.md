@@ -8,6 +8,9 @@ includes F1-20 (Gemini agent with audited deterministic fallback) and F1-11
 `origin/feat/ui-final-integration` at `5f88861` was also assessed without
 merging it.
 
+Phase B was consolidated into the existing `qa/f1-23-phase-a` branch in merge
+commit `080d0fb`; PR #23 carries Phase A and Phase B together.
+
 | Metric | Result |
 |---|---:|
 | S01-S12 regression | 12 / 12 executed; 12 PASS, including S10 PASS_WITH_OBSERVATION |
@@ -36,7 +39,8 @@ E2E and the deployed backend remain blocked.
 |---|---|
 | Repository | `beyond-sprint-labs/recovery` |
 | Base | `main` at `e86c0b2` |
-| Execution branch | `qa/f1-23-phase-b` (local) |
+| Execution branch | `qa/f1-23-phase-b` (local), consolidated into `qa/f1-23-phase-a` |
+| Consolidation merge | `080d0fb` on `qa/f1-23-phase-a` |
 | Phase A reference | `qa/f1-23-phase-a` at `fea5210` |
 | Runtime | Python 3.12.15 from the repository `.venv` |
 | Database | One temporary SQLite database per scenario |

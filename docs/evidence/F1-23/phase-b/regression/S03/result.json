@@ -116,9 +116,9 @@
     }
   ],
   "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S03",
-  "executed_at": "2026-11-11T00:37:29.363956+00:00",
+  "executed_at": "2026-11-11T01:00:04.094686+00:00",
   "http_status": 200,
-  "proposal_id": "prop_5a2c2ae2d435",
+  "proposal_id": "prop_fdf6b830f6c4",
   "scenario_id": "S03",
   "scenario_name": "S03_exceeds_discount",
   "status": "PASS",

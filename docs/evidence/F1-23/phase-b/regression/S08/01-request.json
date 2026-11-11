@@ -4,9 +4,9 @@
     "scenario_id": "S08_injection_ignore_instructions"
   },
   "headers": {
-    "Idempotency-Key": "qa-f1-23-s08-533c2862b9c843d3ba1fbb8424cba661"
+    "Idempotency-Key": "qa-f1-23-s08-9c06e46b277141e2b7105a5d72468b82"
   },
   "method": "POST",
   "path": "/api/v1/invoices/INV-001/proposals",
-  "ts": "2026-11-11T00:37:29.945402+00:00"
+  "ts": "2026-11-11T01:00:04.624099+00:00"
 }

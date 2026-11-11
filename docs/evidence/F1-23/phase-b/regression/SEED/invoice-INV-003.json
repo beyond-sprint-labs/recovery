@@ -5,9 +5,9 @@
     "customer_name": "Fabrikam Demo Services",
     "due_date": "2026-10-31",
     "id": "INV-003",
-    "paypal_invoice_id": "MOCK-INV-A605D592",
+    "paypal_invoice_id": "MOCK-INV-1E931B59",
     "status": "OVERDUE"
   },
   "status_code": 200,
-  "ts": "2026-11-11T00:37:28.787948+00:00"
+  "ts": "2026-11-11T01:00:03.456137+00:00"
 }

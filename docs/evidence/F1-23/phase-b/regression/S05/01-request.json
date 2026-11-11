@@ -4,9 +4,9 @@
     "scenario_id": "S05_ambiguous_slow_business"
   },
   "headers": {
-    "Idempotency-Key": "qa-f1-23-s05-20907596f8c84cc4a6075a5c25840524"
+    "Idempotency-Key": "qa-f1-23-s05-fe02b87f277f44f481f64b97ef3e54c7"
   },
   "method": "POST",
   "path": "/api/v1/invoices/INV-001/proposals",
-  "ts": "2026-11-11T00:37:29.629031+00:00"
+  "ts": "2026-11-11T01:00:04.336372+00:00"
 }

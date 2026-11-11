@@ -14,7 +14,7 @@
       "invoice_id": "INV-001",
       "paypal_called": false,
       "paypal_ref": null,
-      "proposal_id": "prop_930e7784d679",
+      "proposal_id": "prop_1bd1eaa21a67",
       "proposed_by": {
         "id": "agent_v1",
         "mode": "DEMO",
@@ -33,7 +33,7 @@
       "state_from": "DRAFTED",
       "state_to": "BLOCKED",
       "summary": "The agent output failed contract validation; PayPal not called",
-      "ts": "2026-11-11T00:37:30Z"
+      "ts": "2026-11-11T01:00:04Z"
     },
     "blocked_reasons": [
       {
@@ -61,7 +61,7 @@
       "status": "BLOCKED",
       "violations": []
     },
-    "proposal_id": "prop_930e7784d679",
+    "proposal_id": "prop_1bd1eaa21a67",
     "status": "BLOCKED",
     "text_number_check": {
       "numbers_in_text": [],
@@ -75,5 +75,5 @@
     "vary": "Origin"
   },
   "status_code": 200,
-  "ts": "2026-11-11T00:37:30.211135+00:00"
+  "ts": "2026-11-11T01:00:04.820228+00:00"
 }

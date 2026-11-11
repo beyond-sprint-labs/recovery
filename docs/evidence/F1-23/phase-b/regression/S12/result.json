@@ -128,9 +128,9 @@
     }
   ],
   "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S12",
-  "executed_at": "2026-11-11T00:37:30.400639+00:00",
+  "executed_at": "2026-11-11T01:00:05.011588+00:00",
   "http_status": 200,
-  "proposal_id": "prop_db977d7b8c21",
+  "proposal_id": "prop_8fd3271393f5",
   "scenario_id": "S12",
   "scenario_name": "S12_hidden_characters",
   "status": "PASS",

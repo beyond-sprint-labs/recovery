@@ -4,13 +4,13 @@
   },
   "request": {
     "event_type": "INVOICING.INVOICE.PAID",
-    "id": "WH-809d3f9b34dc4272a74d873f316095f0",
+    "id": "WH-a865bc861a0c4535a59517c6048dbc7f",
     "resource": {
       "invoice": {
-        "id": "MOCK-INV-528EB71C"
+        "id": "MOCK-INV-53A350A2"
       }
     }
   },
   "status_code": 200,
-  "ts": "2026-11-11T00:37:29.530573+00:00"
+  "ts": "2026-11-11T01:00:04.268833+00:00"
 }

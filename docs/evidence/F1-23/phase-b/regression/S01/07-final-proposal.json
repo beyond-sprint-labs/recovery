@@ -83,8 +83,8 @@
       "event_id": "aud_000010",
       "invoice_id": "INV-001",
       "paypal_called": true,
-      "paypal_ref": "MOCK-INV-8AC32B72",
-      "proposal_id": "prop_4b339253aeca",
+      "paypal_ref": "MOCK-INV-09B97B43",
+      "proposal_id": "prop_cf56eea3ab42",
       "proposed_by": null,
       "rule": null,
       "seq": 10,
@@ -92,8 +92,8 @@
       "source": "WEBHOOK",
       "state_from": "EXECUTED",
       "state_to": "PAID",
-      "summary": "Payment confirmed via webhook on PayPal invoice MOCK-INV-8AC32B72",
-      "ts": "2026-11-11T00:37:28Z"
+      "summary": "Payment confirmed via webhook on PayPal invoice MOCK-INV-09B97B43",
+      "ts": "2026-11-11T01:00:03Z"
     },
     "blocked_reasons": [],
     "currency": "USD",
@@ -108,8 +108,8 @@
     "explanation": "Option A: Pay $900.00 today with a 10% discount.\nOption B: Pay $300.00 today, followed by 3 monthly installments of $240.37. Final installment: $240.36. Total paid: $1021.10.",
     "invoice_id": "INV-001",
     "paypal": {
-      "new_invoice_id": "MOCK-INV-8AC32B72",
-      "original_invoice_id": "MOCK-INV-FB076FA0",
+      "new_invoice_id": "MOCK-INV-09B97B43",
+      "original_invoice_id": "MOCK-INV-8CF2BAFB",
       "steps": [
         "draft_created",
         "original_cancelled",
@@ -121,7 +121,7 @@
       "status": "PASSED",
       "violations": []
     },
-    "proposal_id": "prop_4b339253aeca",
+    "proposal_id": "prop_cf56eea3ab42",
     "status": "PAID",
     "text_number_check": {
       "numbers_in_text": [
@@ -145,5 +145,5 @@
     }
   },
   "status_code": 200,
-  "ts": "2026-11-11T00:37:28.997943+00:00"
+  "ts": "2026-11-11T01:00:03.706106+00:00"
 }
