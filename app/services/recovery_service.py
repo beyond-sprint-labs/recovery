@@ -31,6 +31,7 @@ from pydantic import ValidationError
 
 from app.agent.agent import ToolRunner
 from app.agent.errors import AgentError, AgentInputError
+from app.agent.fallback_agent import FallbackReporter
 from app.agent.schemas import AgentOutput
 from app.core.config import Settings
 from app.core.errors import (
@@ -655,7 +656,17 @@ class RecoveryService:
             policy=policy,
             as_of=now.date(),
         )
-        return self._finalize(proposal_id=proposal_id, invoice=invoice, decision=decision)
+
+        reasons = (
+            binding.agent.fallback_reasons if isinstance(binding.agent, FallbackReporter) else {}
+        )
+
+        return self._finalize(
+            proposal_id=proposal_id,
+            invoice=invoice,
+            decision=decision,
+            fallback_reasons=reasons,
+        )
 
     # --- merchant decision: approve / reject (F1-13 slice 2) ------------------------------
 
@@ -1537,7 +1548,14 @@ class RecoveryService:
             "awaiting merchant approval",
         )
 
-    def _finalize(self, *, proposal_id: str, invoice: Invoice, decision: _Decision) -> ProposalOut:
+    def _finalize(
+        self,
+        *,
+        proposal_id: str,
+        invoice: Invoice,
+        decision: _Decision,
+        fallback_reasons: Mapping[str, str] | None = None,
+    ) -> ProposalOut:
         """Compare-and-set DRAFTED -> final state and the audit event, atomically."""
         assert_transition(ProposalStatus.DRAFTED, decision.status)
         try:
@@ -1552,6 +1570,27 @@ class RecoveryService:
                     "PROPOSAL_STATE_CONFLICT",
                     "The proposal is no longer in DRAFTED state",
                 )
+
+            if fallback_reasons:
+                stages = ", ".join(
+                    f"{stage}:{reason}" for stage, reason in sorted(fallback_reasons.items())
+                )
+                self._audit.record(
+                    actor=Actor(type="SYSTEM", id="llm_fallback"),
+                    action="LLM_FALLBACK_ACTIVATED",
+                    severity=Severity.WARN,
+                    summary="LLM unavailable or returned invalid output; fallback activated",
+                    invoice_id=invoice.id,
+                    proposal_id=proposal_id,
+                    rule=RuleHit(
+                        code="LLM_FALLBACK_ACTIVATED",
+                        attempted=stages,
+                        unit="stages",
+                    ),
+                    paypal_called=False,
+                    source="API",
+                )
+
             event = self._audit.record(
                 actor=decision.actor,
                 action=decision.action,

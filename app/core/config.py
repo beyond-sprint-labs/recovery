@@ -74,6 +74,8 @@ class Settings(BaseSettings):
         if self.app_env != "production":
             return self
         problems: list[str] = []
+        if self.demo_mode:
+            problems.append("DEMO_MODE=true is forbidden when APP_ENV=production")
         if self.paypal_mode == "mock":
             problems.append("PAYPAL_MODE=mock is forbidden when APP_ENV=production")
         if self.agent_mode == "scripted":
