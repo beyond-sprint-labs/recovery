@@ -58,9 +58,9 @@ export function CustomerPage() {
   if (!view) return <div className="page">Link not found.</div>;
 
   if (responded) {
-    
     const isAccepted = responded.status === "ACCEPTED" || responded.status === "EXECUTED" || responded.status === "PAID";
     const isDeclined = responded.status === "DECLINED";
+    const isPaid = responded.status === "PAID";
 
     return (
       <div className="customer-portal-wrapper">
@@ -69,16 +69,18 @@ export function CustomerPage() {
           textAlign: 'center' 
         }}>
           <div style={{ fontSize: '48px', marginBottom: '16px', color: isAccepted ? 'var(--status-success)' : 'inherit' }}>
-            {isAccepted ? "✅" : isDeclined ? "🚫" : "⏳"}
+            {isPaid ? "✅" : isAccepted ? "📨" : isDeclined ? "🚫" : "⏳"}
           </div>
           
           <h1 style={{ fontSize: '24px', marginBottom: '8px' }}>
-            {isAccepted ? "Repayment Plan Activated!" : isDeclined ? "Offer Declined" : "Processing..."}
+            {isPaid ? "Payment Confirmed!" : isAccepted ? "Repayment Plan Activated!" : isDeclined ? "Offer Declined" : "Processing..."}
           </h1>
           
           <p className="muted" style={{ marginBottom: '32px' }}>
-            {isAccepted 
-              ? "Your agreement has been submitted to PayPal Sandbox. The revised invoice schedule is now active."
+            {isPaid 
+              ? "Your payment has been confirmed. Thank you."
+              : isAccepted 
+              ? "Your new invoice has been sent through PayPal. Payment is not confirmed yet."
               : isDeclined 
               ? "You have declined the repayment offer. The merchant will be notified."
               : "We are finalizing your request with PayPal. Please wait."}
@@ -106,8 +108,12 @@ export function CustomerPage() {
                   <span style={{ fontWeight: 600 }}>{formatMoney(view.alternative.amount_due_now)} USD</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span className="muted">First Payment Status:</span>
-                  <span className="pill pill-approved" style={{ fontSize: '11px', padding: '2px 8px' }}>CONFIRMED (Sandbox Demo)</span>
+                  <span className="muted">Payment Status:</span>
+                  {isPaid ? (
+                    <span className="pill pill-approved" style={{ fontSize: '11px', padding: '2px 8px' }}>CONFIRMED</span>
+                  ) : (
+                    <span className="pill" style={{ fontSize: '11px', padding: '2px 8px', background: '#fef3c7', color: '#92400e' }}>AWAITING PAYMENT (Invoice Sent)</span>
+                  )}
                 </div>
               </div>
             </div>

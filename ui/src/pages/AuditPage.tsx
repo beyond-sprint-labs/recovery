@@ -14,53 +14,70 @@ const rowClassRules: RowClassRules<AuditEvent> = {
 };
 
 export function AuditPage() {
-  const [rows, setRows] = useState<AuditEvent[]>([]);
-  const [nextSeq, setNextSeq] = useState<number>(0);
-  const [autoScroll, setAutoScroll] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [counts, setCounts] = useState({ total: 0, critical: 0 });
+  
   const gridApiRef = useRef<GridApi<AuditEvent> | null>(null);
-  const pollRef = useRef<number | null>(null);
-  const aliveRef = useRef(true);
+  const [gridReady, setGridReady] = useState(false);
+  
+  // Streaming references
+  const cursorRef = useRef(0);
+  const inFlightRef = useRef(false);
 
   const onGridReady = useCallback((e: GridReadyEvent<AuditEvent>) => {
     gridApiRef.current = e.api;
+    setGridReady(true);
   }, []);
 
-  const poll = useCallback(async () => {
-    if (isPaused) return; 
-    
-    try {
-      const page = await getAuditEvents(nextSeq);
-      if (!aliveRef.current) return;
-      
-      if (page.items.length > 0) {
-        setRows((prev) => [...prev, ...page.items]);
-        setNextSeq(page.next_seq);
-        
-
-        if (autoScroll) {
-          setTimeout(() => {
-            const last = page.items[page.items.length - 1];
-            const node = gridApiRef.current?.getRowNode(last.event_id);
-            if (node) gridApiRef.current?.flashCells({ rowNodes: [node] });
-          }, 100);
-        }
-      }
-    } catch (e) {
-      setError(String(e));
-    }
-  }, [nextSeq, autoScroll, isPaused]);
-
   useEffect(() => {
-    aliveRef.current = true;
-    poll();
-    pollRef.current = window.setInterval(poll, POLL_MS);
-    return () => {
-      aliveRef.current = false;
-      if (pollRef.current) window.clearInterval(pollRef.current);
+    if (!gridReady || isPaused) return;
+    let alive = true;
+    
+    const tick = async () => {
+      if (inFlightRef.current) return;
+      inFlightRef.current = true;
+      
+      try {
+        const page = await getAuditEvents(cursorRef.current);
+        if (!alive) return;
+        
+        if (page.items.length > 0) {
+          cursorRef.current = page.next_seq;
+          const api = gridApiRef.current;
+          
+          // We filter out duplicates
+          const fresh = page.items.filter((e) => !api?.getRowNode(e.event_id));
+          
+          if (fresh.length > 0) {
+            // We insert without reloading the entire table.
+            const added = api?.applyTransaction({ add: fresh, addIndex: 0 });
+            
+            if (added?.add && added.add.length > 0) {
+              api?.flashCells({ rowNodes: added.add });
+            }
+            
+            setCounts((c) => ({
+              total: c.total + fresh.length,
+              critical: c.critical + fresh.filter((e) => e.severity === "CRITICAL").length,
+            }));
+          }
+        }
+        setError(null);
+      } catch (e) {
+        if (alive) setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        inFlightRef.current = false;
+      }
     };
-  }, [poll]);
+    
+    void tick();
+    const id = window.setInterval(tick, POLL_MS);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, [gridReady, isPaused]);
 
   return (
     <div className="page">
@@ -76,11 +93,6 @@ export function AuditPage() {
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <label className="toggle" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, marginRight: '12px' }}>
-            <input type="checkbox" checked={autoScroll} onChange={(e) => setAutoScroll(e.target.checked)} />
-            Auto-scroll
-          </label>
-          
           <button 
             className="btn" 
             onClick={() => setIsPaused(!isPaused)}
@@ -100,13 +112,11 @@ export function AuditPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '32px' }}>
         <div className="card" style={{ padding: '24px' }}>
           <div className="muted" style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Total Events Streamed</div>
-          <div style={{ fontSize: '36px', fontWeight: 800, marginTop: '8px', color: 'var(--text-primary)' }}>{rows.length}</div>
+          <div style={{ fontSize: '36px', fontWeight: 800, marginTop: '8px', color: 'var(--text-primary)' }}>{counts.total}</div>
         </div>
         <div className="card" style={{ padding: '24px', borderLeft: '4px solid var(--status-danger)' }}>
           <div className="muted" style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600, color: 'var(--status-danger)' }}>Critical Interceptions</div>
-          <div style={{ fontSize: '36px', fontWeight: 800, marginTop: '8px', color: 'var(--status-danger)' }}>
-            {rows.filter(r => r.severity === "CRITICAL").length}
-          </div>
+          <div style={{ fontSize: '36px', fontWeight: 800, marginTop: '8px', color: 'var(--status-danger)' }}>{counts.critical}</div>
         </div>
         <div className="card" style={{ padding: '24px' }}>
           <div className="muted" style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Stream Frequency</div>
@@ -118,9 +128,9 @@ export function AuditPage() {
         </div>
       </div>
       
+      {/* NOTE: There is no longer a `rowData={rows}` here. Only `applyTransaction`. */}
       <div className="grid-wrapper ag-theme-quartz audit-grid" style={{ height: "60vh" }}>
         <AgGridReact<AuditEvent>
-          rowData={rows}
           columnDefs={auditColumns}
           defaultColDef={{ sortable: true, filter: true, resizable: true }}
           getRowId={(p) => p.data.event_id}

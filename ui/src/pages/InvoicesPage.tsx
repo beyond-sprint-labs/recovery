@@ -50,7 +50,7 @@ export function InvoicesPage() {
   );
 
   async function onPropose(invoice: Invoice) {
-    console.log("Enviando scenario_id:", scenario); // <-- AÑADE ESTO
+    console.log("Enviando scenario_id:", scenario);
     setProposing(invoice.id);
     setError(null);
     try {
@@ -96,10 +96,11 @@ export function InvoicesPage() {
           Scenario (demo)
           <select value={scenario} onChange={(e) => setScenario(e.target.value)}>
             <option value="">Real AI (no scripted scenario)</option>
-            <option value="S01_partial_payment_now">S01 · Partial payment (SUCCESS)</option>
-            <option value="S02_reasonable_discount">S02 · Reasonable discount (SUCCESS)</option>
+            <option value="S01_partial_payment_now">S01 · Partial payment now (OK)</option>
+            <option value="S02_installments_request">S02 · Installments request (OK)</option>
             <option value="S03_exceeds_discount">S03 · Exceeds discount (BLOCKED)</option>
-            <option value="S11_text_mismatch">S11 · Text/number mismatch (BLOCKED)</option>
+            <option value="S04_reasonable_discount">S04 · Reasonable discount (OK)</option>
+  <         option value="S11_text_mismatch">S11 · Text/number mismatch (BLOCKED)</option>
           </select>
         </label>
       </div>
