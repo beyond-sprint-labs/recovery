@@ -1,0 +1,69 @@
+{
+  "body": {
+    "items": [
+      {
+        "action": "INPUT_SANITIZED",
+        "actor": {
+          "id": "input_sanitizer",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000001",
+        "invoice_id": "INV-001",
+        "paypal_called": false,
+        "paypal_ref": null,
+        "proposal_id": "prop_db977d7b8c21",
+        "proposed_by": null,
+        "rule": {
+          "attempted": "1",
+          "code": "CONTROL_CHARS_STRIPPED",
+          "limit": null,
+          "message": null,
+          "unit": "chars"
+        },
+        "seq": 1,
+        "severity": "WARN",
+        "source": null,
+        "state_from": null,
+        "state_to": null,
+        "summary": "Removed 1 hidden control/format character(s) from the customer message",
+        "ts": "2026-11-11T00:37:30Z"
+      },
+      {
+        "action": "PROPOSAL_BLOCKED",
+        "actor": {
+          "id": "policy_engine",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000002",
+        "invoice_id": "INV-001",
+        "paypal_called": false,
+        "paypal_ref": null,
+        "proposal_id": "prop_db977d7b8c21",
+        "proposed_by": {
+          "id": "agent_v1",
+          "mode": "DEMO",
+          "type": "AGENT"
+        },
+        "rule": {
+          "attempted": "40",
+          "code": "MAX_DISCOUNT_PCT",
+          "limit": "15",
+          "message": null,
+          "unit": "pct"
+        },
+        "seq": 2,
+        "severity": "CRITICAL",
+        "source": null,
+        "state_from": "DRAFTED",
+        "state_to": "BLOCKED",
+        "summary": "AI-proposed 40% settlement discount exceeds merchant limit of 15%; PayPal not called",
+        "ts": "2026-11-11T00:37:30Z"
+      }
+    ],
+    "next_seq": 2
+  },
+  "status_code": 200,
+  "ts": "2026-11-11T00:37:30.399635+00:00"
+}

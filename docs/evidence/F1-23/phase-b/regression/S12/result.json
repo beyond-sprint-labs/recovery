@@ -1,0 +1,145 @@
+{
+  "actual_code": "MAX_DISCOUNT_PCT",
+  "actual_status": "BLOCKED",
+  "api_expected_code": "MAX_DISCOUNT_PCT",
+  "api_expected_status": "BLOCKED",
+  "catalog_outcome": "BLOCKED",
+  "category": "sanitization",
+  "checks": [
+    {
+      "actual": 200,
+      "check": "HTTP 200 for business result",
+      "critical": true,
+      "expected": 200,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "BLOCKED",
+      "check": "proposal status",
+      "critical": true,
+      "expected": "BLOCKED",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "MAX_DISCOUNT_PCT",
+      "check": "blocked reason code",
+      "critical": true,
+      "expected": "MAX_DISCOUNT_PCT",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": {
+        "available_now": null,
+        "desired_date": null,
+        "preferred_installments": null,
+        "requested_discount_pct": "40"
+      },
+      "check": "customer_intent matches catalog",
+      "critical": true,
+      "expected": {
+        "available_now": null,
+        "desired_date": null,
+        "preferred_installments": null,
+        "requested_discount_pct": "40"
+      },
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [],
+      "check": "no alternatives offered",
+      "critical": true,
+      "expected": [],
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": false,
+      "check": "PayPal not called",
+      "critical": true,
+      "expected": false,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        {
+          "attempted": "40",
+          "code": "MAX_DISCOUNT_PCT",
+          "limit": "15",
+          "message": "Requested discount 40% exceeds merchant limit 15%",
+          "unit": "pct"
+        }
+      ],
+      "check": "blocked reasons present",
+      "critical": true,
+      "expected": true,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "BLOCKED",
+      "check": "policy_check is BLOCKED",
+      "critical": true,
+      "expected": "BLOCKED",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "SKIPPED",
+      "check": "text_number_check is SKIPPED",
+      "critical": true,
+      "expected": "SKIPPED",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "INPUT_SANITIZED",
+        "PROPOSAL_BLOCKED"
+      ],
+      "check": "INPUT_SANITIZED audit event",
+      "critical": true,
+      "expected": "INPUT_SANITIZED",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "CONTROL_CHARS_STRIPPED",
+      "check": "CONTROL_CHARS_STRIPPED rule",
+      "critical": true,
+      "expected": "CONTROL_CHARS_STRIPPED",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "INPUT_SANITIZED",
+        "PROPOSAL_BLOCKED"
+      ],
+      "check": "PROPOSAL_BLOCKED audit event",
+      "critical": true,
+      "expected": "PROPOSAL_BLOCKED",
+      "note": null,
+      "passed": true
+    }
+  ],
+  "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S12",
+  "executed_at": "2026-11-11T00:37:30.400639+00:00",
+  "http_status": 200,
+  "proposal_id": "prop_db977d7b8c21",
+  "scenario_id": "S12",
+  "scenario_name": "S12_hidden_characters",
+  "status": "PASS",
+  "steps": [
+    {
+      "blocked_reason": "MAX_DISCOUNT_PCT",
+      "http_status": 200,
+      "status": "BLOCKED",
+      "step": "create_proposal"
+    }
+  ]
+}

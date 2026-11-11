@@ -1,0 +1,36 @@
+{
+  "body": {
+    "alternative": {
+      "amount_due_now": "900.00",
+      "installment_amount": null,
+      "schedule": [
+        {
+          "amount": "900.00",
+          "due_date": "2026-11-11",
+          "interest": "0.00",
+          "n": 0,
+          "principal": "900.00"
+        }
+      ],
+      "terms": {
+        "discount_pct": "10"
+      },
+      "total_paid": "900.00",
+      "type": "settlement_discount"
+    },
+    "currency": "USD",
+    "customer_message": "Hello, your proposed settlement terms for invoice INV-001 have been approved. You can settle the full balance today with a single payment of $900.00 (10% discount). Please review the terms and confirm below.",
+    "expires_at": "2026-11-12T00:37:29Z",
+    "invoice_id": "INV-001",
+    "original_balance": "1000.00",
+    "proposal_id": "prop_497c19a5172b",
+    "simulation_notice": "Simulation subject to merchant approval and customer acceptance. Not financial or legal advice.",
+    "status": "PENDING_CUSTOMER"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/customer/proposals/<redacted>"
+  },
+  "status_code": 200,
+  "ts": "2026-11-11T00:37:29.492758+00:00"
+}

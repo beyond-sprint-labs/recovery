@@ -1,0 +1,309 @@
+{
+  "blocked": [
+    {
+      "id": "BLK-B02",
+      "reason": "No authorized LLM_API_KEY is available; no live provider call was made.",
+      "scope": "Live Gemini LLM"
+    },
+    {
+      "id": "BLK-B01",
+      "reason": "No Sandbox credentials, buyer or public HTTPS webhook URL are available.",
+      "scope": "PayPal Sandbox real"
+    }
+  ],
+  "checks": [
+    {
+      "actual": "exit=0; missing=[]",
+      "check": "F1-20 startup fails closed when LLM_API_KEY is missing",
+      "critical": true,
+      "expected": "exit=0; fragments=['UpstreamError', 'LLM configuration is incomplete']",
+      "note": "See the matching JSON evidence file for exact stdout/stderr.",
+      "passed": true
+    },
+    {
+      "actual": "exit=0; missing=[]",
+      "check": "F1-20 production guard rejects DEMO_MODE=true",
+      "critical": true,
+      "expected": "exit=0; fragments=['ValidationError', 'DEMO_MODE=true is forbidden']",
+      "note": "See the matching JSON evidence file for exact stdout/stderr.",
+      "passed": true
+    },
+    {
+      "actual": "200 with agent_mode=llm",
+      "check": "health reports AGENT_MODE=llm",
+      "critical": true,
+      "expected": "200 with agent_mode=llm",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "200 / PENDING_MERCHANT",
+      "check": "scenario override returns PENDING_MERCHANT",
+      "critical": true,
+      "expected": "200 / PENDING_MERCHANT",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "300.00",
+      "check": "scripted intent is used instead of a live LLM call",
+      "critical": true,
+      "expected": "available_now=300.00",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "PROPOSAL_DRAFTED"
+      ],
+      "check": "proposal audit trail is persisted",
+      "critical": true,
+      "expected": "PROPOSAL_DRAFTED present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "PROPOSAL_DRAFTED"
+      ],
+      "check": "no fallback audit is emitted for the scripted override",
+      "critical": true,
+      "expected": "LLM_FALLBACK_ACTIVATED absent",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "exit=1; missing=[]",
+      "check": "F1-11 Sandbox bootstrap rejects PAYPAL_MODE=mock",
+      "critical": true,
+      "expected": "exit=1; fragments=['Sandbox bootstrap requires PAYPAL_MODE=real']",
+      "note": "See the matching JSON evidence file for exact stdout/stderr.",
+      "passed": true
+    },
+    {
+      "actual": "exit=1; missing=[]",
+      "check": "F1-11 Sandbox bootstrap rejects a non-Sandbox URL",
+      "critical": true,
+      "expected": "exit=1; fragments=['Sandbox bootstrap refuses to run against a non-Sandbox PayPal URL']",
+      "note": "See the matching JSON evidence file for exact stdout/stderr.",
+      "passed": true
+    },
+    {
+      "actual": "exit=1; missing=[]",
+      "check": "F1-11 Sandbox bootstrap rejects a missing Sandbox buyer",
+      "critical": true,
+      "expected": "exit=1; fragments=['Sandbox bootstrap requires PAYPAL_SANDBOX_BUYER_EMAIL']",
+      "note": "See the matching JSON evidence file for exact stdout/stderr.",
+      "passed": true
+    },
+    {
+      "actual": "LLM_PROVIDER present",
+      "check": ".env.example documents LLM_PROVIDER",
+      "critical": true,
+      "expected": "LLM_PROVIDER present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "LLM_MODEL present",
+      "check": ".env.example documents LLM_MODEL",
+      "critical": true,
+      "expected": "LLM_MODEL present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "LLM_API_KEY present",
+      "check": ".env.example documents LLM_API_KEY",
+      "critical": true,
+      "expected": "LLM_API_KEY present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "PAYPAL_SANDBOX_BUYER_EMAIL present",
+      "check": ".env.example documents PAYPAL_SANDBOX_BUYER_EMAIL",
+      "critical": true,
+      "expected": "PAYPAL_SANDBOX_BUYER_EMAIL present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "ALLOW_SANDBOX_PAYMENT_SHORTCUT present",
+      "check": ".env.example documents ALLOW_SANDBOX_PAYMENT_SHORTCUT",
+      "critical": true,
+      "expected": "ALLOW_SANDBOX_PAYMENT_SHORTCUT present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "PUBLIC_BASE_URL present",
+      "check": ".env.example documents PUBLIC_BASE_URL",
+      "critical": true,
+      "expected": "PUBLIC_BASE_URL present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "python -m app.seed.sandbox_bootstrap missing",
+      "check": "DEPLOY.md documents python -m app.seed.sandbox_bootstrap",
+      "critical": true,
+      "expected": "python -m app.seed.sandbox_bootstrap present",
+      "note": null,
+      "passed": false
+    },
+    {
+      "actual": "PAYPAL_WEBHOOK_ID present",
+      "check": "DEPLOY.md documents PAYPAL_WEBHOOK_ID",
+      "critical": true,
+      "expected": "PAYPAL_WEBHOOK_ID present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "PAYPAL_SANDBOX_BUYER_EMAIL present",
+      "check": "DEPLOY.md documents PAYPAL_SANDBOX_BUYER_EMAIL",
+      "critical": true,
+      "expected": "PAYPAL_SANDBOX_BUYER_EMAIL present",
+      "note": null,
+      "passed": true
+    }
+  ],
+  "generated_at": "2026-11-11T00:21:28.372064+00:00",
+  "phase": "B",
+  "scenario_override": {
+    "checks": [
+      {
+        "actual": "200 with agent_mode=llm",
+        "check": "health reports AGENT_MODE=llm",
+        "critical": true,
+        "expected": "200 with agent_mode=llm",
+        "note": null,
+        "passed": true
+      },
+      {
+        "actual": "200 / PENDING_MERCHANT",
+        "check": "scenario override returns PENDING_MERCHANT",
+        "critical": true,
+        "expected": "200 / PENDING_MERCHANT",
+        "note": null,
+        "passed": true
+      },
+      {
+        "actual": "300.00",
+        "check": "scripted intent is used instead of a live LLM call",
+        "critical": true,
+        "expected": "available_now=300.00",
+        "note": null,
+        "passed": true
+      },
+      {
+        "actual": [
+          "PROPOSAL_DRAFTED"
+        ],
+        "check": "proposal audit trail is persisted",
+        "critical": true,
+        "expected": "PROPOSAL_DRAFTED present",
+        "note": null,
+        "passed": true
+      },
+      {
+        "actual": [
+          "PROPOSAL_DRAFTED"
+        ],
+        "check": "no fallback audit is emitted for the scripted override",
+        "critical": true,
+        "expected": "LLM_FALLBACK_ACTIVATED absent",
+        "note": null,
+        "passed": true
+      }
+    ],
+    "note": "No live Gemini call is made: a non-null scenario_id selects the scripted agent before GeminiClient is constructed. This validates wiring and the scenario override, not live LLM quality.",
+    "probe": "F1-20 scenario override in AGENT_MODE=llm",
+    "status": "PASS"
+  },
+  "scope": "F1-20 and F1-11 available-scope probes",
+  "static": {
+    "checks": [
+      {
+        "actual": "LLM_PROVIDER present",
+        "check": ".env.example documents LLM_PROVIDER",
+        "critical": true,
+        "expected": "LLM_PROVIDER present",
+        "note": null,
+        "passed": true
+      },
+      {
+        "actual": "LLM_MODEL present",
+        "check": ".env.example documents LLM_MODEL",
+        "critical": true,
+        "expected": "LLM_MODEL present",
+        "note": null,
+        "passed": true
+      },
+      {
+        "actual": "LLM_API_KEY present",
+        "check": ".env.example documents LLM_API_KEY",
+        "critical": true,
+        "expected": "LLM_API_KEY present",
+        "note": null,
+        "passed": true
+      },
+      {
+        "actual": "PAYPAL_SANDBOX_BUYER_EMAIL present",
+        "check": ".env.example documents PAYPAL_SANDBOX_BUYER_EMAIL",
+        "critical": true,
+        "expected": "PAYPAL_SANDBOX_BUYER_EMAIL present",
+        "note": null,
+        "passed": true
+      },
+      {
+        "actual": "ALLOW_SANDBOX_PAYMENT_SHORTCUT present",
+        "check": ".env.example documents ALLOW_SANDBOX_PAYMENT_SHORTCUT",
+        "critical": true,
+        "expected": "ALLOW_SANDBOX_PAYMENT_SHORTCUT present",
+        "note": null,
+        "passed": true
+      },
+      {
+        "actual": "PUBLIC_BASE_URL present",
+        "check": ".env.example documents PUBLIC_BASE_URL",
+        "critical": true,
+        "expected": "PUBLIC_BASE_URL present",
+        "note": null,
+        "passed": true
+      },
+      {
+        "actual": "python -m app.seed.sandbox_bootstrap missing",
+        "check": "DEPLOY.md documents python -m app.seed.sandbox_bootstrap",
+        "critical": true,
+        "expected": "python -m app.seed.sandbox_bootstrap present",
+        "note": null,
+        "passed": false
+      },
+      {
+        "actual": "PAYPAL_WEBHOOK_ID present",
+        "check": "DEPLOY.md documents PAYPAL_WEBHOOK_ID",
+        "critical": true,
+        "expected": "PAYPAL_WEBHOOK_ID present",
+        "note": null,
+        "passed": true
+      },
+      {
+        "actual": "PAYPAL_SANDBOX_BUYER_EMAIL present",
+        "check": "DEPLOY.md documents PAYPAL_SANDBOX_BUYER_EMAIL",
+        "critical": true,
+        "expected": "PAYPAL_SANDBOX_BUYER_EMAIL present",
+        "note": null,
+        "passed": true
+      }
+    ],
+    "evidence": {
+      "deploy_guide": "docs/DEPLOY.md",
+      "env_example": ".env.example"
+    },
+    "probe": "F1-11 deployment template and guide completeness",
+    "status": "FAIL"
+  },
+  "status": "FAIL"
+}

@@ -1,0 +1,5 @@
+
+> ui@0.0.0 build
+> tsc -b && vite build
+
+src/api/client.ts(85,5): error TS6133: 'mockAuditCursor' is declared but its value is never read.
