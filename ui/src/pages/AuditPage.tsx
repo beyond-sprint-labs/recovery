@@ -88,7 +88,7 @@ export function AuditPage() {
           </div>
           <h1>Live Audit & Compliance Trail</h1>
           <p className="muted">
-            Immutable AG Grid event stream monitoring financial guardrails, state transitions, and PayPal orchestration.
+            Live AG Grid event stream monitoring financial guardrails, state transitions, and PayPal orchestration.
           </p>
         </div>
         

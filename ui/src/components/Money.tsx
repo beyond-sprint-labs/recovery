@@ -1,22 +1,15 @@
 import type { Money as MoneyString } from "../types/api";
 
-const formatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-});
+const MONEY_RE = /^(-?)(0|[1-9][0-9]{0,11})\.([0-9]{2})$/;
+const THOUSANDS_RE = /\B(?=([0-9]{3})+(?![0-9]))/g;
 
-/** Renders a Money string. Never calls parseFloat for formatting. */
+/** Formats a contract Money string without ever converting it to a number. */
 export function formatMoney(value: MoneyString | null | undefined): string {
   if (value === null || value === undefined || value === "") return "—";
-  // Format by string only: split integer / fraction, keep as-is.
-  const neg = value.startsWith("-");
-  const raw = neg ? value.slice(1) : value;
-  const [intPart, fracPart = "00"] = raw.split(".");
-  const asNumber = Number(intPart); // safe: integers up to 12 digits per contract
-  if (!Number.isFinite(asNumber)) return value;
-  const withFrac = `${asNumber}.${fracPart.padEnd(2, "0").slice(0, 2)}`;
-  const formatted = formatter.format(Number(withFrac));
-  return neg ? `-${formatted}` : formatted;
+  const match = MONEY_RE.exec(value);
+  if (match === null) return "—";
+  const [, sign, integerPart, fraction] = match;
+  return `${sign}$${integerPart.replace(THOUSANDS_RE, ",")}.${fraction}`;
 }
 
 export function Money({ value }: { value: MoneyString | null | undefined }) {

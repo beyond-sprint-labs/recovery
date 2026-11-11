@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
+  ApiRequestError,
   approveProposal,
   getProposal,
   isMockMode,
@@ -16,6 +17,7 @@ import type {
   ReconcileOut,
 } from "../types/api";
 import { formatMoney } from "../components/Money";
+import { ExecutionTimeline } from "../components/ExecutionTimeline";
 
 const ALT_LABEL: Record<string, string> = {
   settlement_discount: "Settlement Discount",
@@ -52,7 +54,7 @@ function messageOf(e: unknown): string {
   return e instanceof Error ? e.message : "Unexpected error.";
 }
 
-function unitSuffix(unit?: string): string {
+function unitSuffix(unit?: string | null): string {
   if (!unit) return "";
   return unit === "pct" ? "%" : ` ${unit}`;
 }
@@ -122,8 +124,12 @@ export function ProposalPage() {
       setApproveResult(out);
       setProposal({ ...proposal, status: out.status });
     } catch (e) {
-      
       setActionError(messageOf(e));
+      if (e instanceof ApiRequestError && e.status === 409) {
+        await getProposal(proposal.proposal_id)
+          .then(setProposal)
+          .catch(() => undefined);
+      }
     } finally {
       setApproving(null);
     }
@@ -172,6 +178,9 @@ export function ProposalPage() {
   const canApprove = proposal.status === "PENDING_MERCHANT";
  
   const isPaid = proposal.status === "PAID" || executing?.status === "PAID";
+  const approvedType = proposal.approved_alternative ?? approveResult?.approved_alternative ?? null;
+  const paidTitle =
+    approvedType === "settlement_discount" ? "Payment confirmed" : "First scheduled payment confirmed";
 
   return (
     <div className="page" style={{ maxWidth: "1100px", margin: "0 auto" }}>
@@ -325,9 +334,16 @@ export function ProposalPage() {
       )}
 
       
+      {proposal.paypal && proposal.paypal.steps.length > 0 && (
+        <section className="card" style={{ marginTop: "24px", padding: "20px" }}>
+          <h2 style={{ fontSize: "16px", margin: "0 0 12px 0" }}>PayPal execution</h2>
+          <ExecutionTimeline steps={proposal.paypal.steps} />
+        </section>
+      )}
+
       {isPaid && (
         <section className="card success" style={{ marginTop: "24px", padding: "20px" }}>
-          <h2 style={{ fontSize: "18px", margin: 0 }}>Payment Confirmed</h2>
+          <h2 style={{ fontSize: "18px", margin: 0 }}>{paidTitle}</h2>
         </section>
       )}
     </div>

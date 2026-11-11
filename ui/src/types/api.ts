@@ -73,23 +73,12 @@ export interface Alternative {
   financing_cost: Money;
   merchant_difference_vs_balance: SignedMoney;
   policy_ok: boolean;
+  violations?: RuleHit[];
   schedule: ScheduleItem[];
 }
 
-export interface BlockedReason {
-  code: string;
-  message: string;
-  limit: string;
-  attempted: string;
-  unit: string;
-}
-
-export interface PolicyViolation {
-  code: string;
-  limit: string;
-  attempted: string;
-  unit: string;
-}
+export type BlockedReason = RuleHit;
+export type PolicyViolation = RuleHit;
 
 export interface PolicyCheck {
   status: "PASSED" | "BLOCKED";
@@ -111,13 +100,15 @@ export interface AttemptedAlternative {
 export interface AuditActor {
   type: "SYSTEM" | "AGENT" | "MERCHANT" | "CUSTOMER" | "PAYPAL";
   id: string;
+  mode?: string | null;
 }
 
 export interface RuleHit {
   code: string;
-  limit: string;
-  attempted: string;
-  unit: string;
+  limit?: string | null;
+  attempted?: string | null;
+  unit?: string | null;
+  message?: string | null;
 }
 
 export interface AuditEvent {
@@ -148,13 +139,15 @@ export interface ProposalOut {
   customer_intent: CustomerIntent;
   alternatives: Alternative[];              // [] when BLOCKED
   attempted?: AttemptedAlternative[];       // only when BLOCKED
-  blocked_reasons?: BlockedReason[];        // only when BLOCKED
+  blocked_reasons?: RuleHit[];              // only when BLOCKED
   explanation: string | null;
   customer_message_draft: string | null;
   policy_check: PolicyCheck;
   text_number_check: TextNumberCheck;
   paypal_called: boolean;
-  audit_event: AuditEvent;
+  approved_alternative?: AlternativeType | null;
+  paypal?: PayPalExecution | null;
+  audit_event?: AuditEvent | null;
 }
 
 // ---------- CreateProposal ----------
@@ -214,17 +207,11 @@ export interface RespondIn {
   decision: "ACCEPT" | "DECLINE";
 }
 
-export interface PayPalStep {
-  name: string;
-  status: "OK" | "FAILED" | "SKIPPED";
-  ref?: string | null;
-  at?: IsoDateTime;
-}
 
 export interface PayPalExecution {
   new_invoice_id: string | null;
   original_invoice_id: string | null;
-  steps: PayPalStep[];
+  steps: string[];
 }
 
 export interface RespondOut {

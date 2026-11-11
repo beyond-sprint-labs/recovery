@@ -1,5 +1,3 @@
-import type { PayPalStep } from "../types/api";
-
 const STEP_LABEL: Record<string, string> = {
   preflight: "Preflight check",
   draft_created: "Draft created",
@@ -8,14 +6,13 @@ const STEP_LABEL: Record<string, string> = {
   webhook_received: "Webhook received",
 };
 
-export function ExecutionTimeline({ steps }: { steps: PayPalStep[] }) {
+export function ExecutionTimeline({ steps }: { steps: readonly string[] }) {
   return (
     <ol className="timeline">
-      {steps.map((s) => (
-        <li key={s.name} className={`timeline-step timeline-${s.status.toLowerCase()}`}>
+      {steps.map((name, index) => (
+        <li key={`${name}-${index}`} className="timeline-step timeline-ok">
           <span className="dot" />
-          <span className="label">{STEP_LABEL[s.name] ?? s.name}</span>
-          {s.ref ? <span className="ref">{s.ref}</span> : null}
+          <span className="label">{STEP_LABEL[name] ?? name}</span>
         </li>
       ))}
     </ol>

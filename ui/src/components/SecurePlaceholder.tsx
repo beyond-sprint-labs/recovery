@@ -99,7 +99,7 @@ export function SecurePlaceholder({ title, description, actionLabel, onAction }:
           display: 'flex', alignItems: 'center', justifyContent: 'center', 
           gap: '8px', marginTop: '32px', color: 'var(--text-tertiary)', fontSize: '13px' 
         }}>
-          <span>🔒</span> End-to-end encrypted
+          <span>🔒</span> Single-use secure link
         </div>
       </div>
     </div>
