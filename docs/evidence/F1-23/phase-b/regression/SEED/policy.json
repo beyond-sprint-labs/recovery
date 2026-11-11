@@ -1,0 +1,12 @@
+{
+  "body": {
+    "currency": "USD",
+    "max_discount_pct": "15",
+    "max_financing_rate_pct": "2.0",
+    "max_installments": 6,
+    "merchant_discount_rate_pct": "1.0",
+    "min_down_payment_pct": "20"
+  },
+  "status_code": 200,
+  "ts": "2026-11-11T00:37:28.813661+00:00"
+}

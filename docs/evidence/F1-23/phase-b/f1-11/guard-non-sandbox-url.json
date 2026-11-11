@@ -1,0 +1,26 @@
+{
+  "actual_exit": 1,
+  "command": [
+    "C:\\Users\\PC\\Desktop\\Camilo\\repos\\recovery-official\\.venv\\Scripts\\python.exe",
+    "-m",
+    "app.seed.sandbox_bootstrap"
+  ],
+  "environment": {
+    "APP_ENV": "local",
+    "DATABASE_URL": "sqlite:///C:/Users/PC/AppData/Local/Temp/f1-23-b-sandbox-url-eqib0ian/qa.db",
+    "DEMO_MODE": "false",
+    "PAYPAL_BASE_URL": "https://api-m.paypal.com",
+    "PAYPAL_MODE": "real",
+    "PAYPAL_SANDBOX_BUYER_EMAIL": "buyer@example.com",
+    "PUBLIC_BASE_URL": "http://localhost:8000"
+  },
+  "expected_exit": 1,
+  "expected_fragments": [
+    "Sandbox bootstrap refuses to run against a non-Sandbox PayPal URL"
+  ],
+  "missing_fragments": [],
+  "passed": true,
+  "probe": "F1-11 Sandbox bootstrap rejects a non-Sandbox URL",
+  "stderr": "Sandbox bootstrap refuses to run against a non-Sandbox PayPal URL\n",
+  "stdout": ""
+}

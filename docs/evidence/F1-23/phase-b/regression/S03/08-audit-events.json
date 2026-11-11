@@ -1,0 +1,41 @@
+{
+  "body": {
+    "items": [
+      {
+        "action": "PROPOSAL_BLOCKED",
+        "actor": {
+          "id": "policy_engine",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000001",
+        "invoice_id": "INV-001",
+        "paypal_called": false,
+        "paypal_ref": null,
+        "proposal_id": "prop_5a2c2ae2d435",
+        "proposed_by": {
+          "id": "agent_v1",
+          "mode": "DEMO",
+          "type": "AGENT"
+        },
+        "rule": {
+          "attempted": "40",
+          "code": "MAX_DISCOUNT_PCT",
+          "limit": "15",
+          "message": null,
+          "unit": "pct"
+        },
+        "seq": 1,
+        "severity": "CRITICAL",
+        "source": null,
+        "state_from": "DRAFTED",
+        "state_to": "BLOCKED",
+        "summary": "AI-proposed 40% settlement discount exceeds merchant limit of 15%; PayPal not called",
+        "ts": "2026-11-11T00:37:29Z"
+      }
+    ],
+    "next_seq": 1
+  },
+  "status_code": 200,
+  "ts": "2026-11-11T00:37:29.362158+00:00"
+}

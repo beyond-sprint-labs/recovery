@@ -1,0 +1,12 @@
+{
+  "body": {
+    "customer_message": "I can pay $300 right now and spread the rest over three monthly payments.",
+    "scenario_id": "S01_partial_payment_now"
+  },
+  "headers": {
+    "Idempotency-Key": "qa-f1-23-s01-a17bf2d08bb24c14b23f2dc3ae1e9ab1"
+  },
+  "method": "POST",
+  "path": "/api/v1/invoices/INV-001/proposals",
+  "ts": "2026-11-11T00:37:28.897076+00:00"
+}

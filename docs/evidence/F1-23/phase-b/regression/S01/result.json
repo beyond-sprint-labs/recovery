@@ -1,0 +1,498 @@
+{
+  "actual_code": null,
+  "actual_status": "PENDING_MERCHANT",
+  "api_expected_code": null,
+  "api_expected_status": "PENDING_MERCHANT",
+  "catalog_outcome": "PENDING_MERCHANT",
+  "category": "partial_payment",
+  "checks": [
+    {
+      "actual": 200,
+      "check": "HTTP 200 for business result",
+      "critical": true,
+      "expected": 200,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "PENDING_MERCHANT",
+      "check": "proposal status",
+      "critical": true,
+      "expected": "PENDING_MERCHANT",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": {
+        "available_now": "300.00",
+        "desired_date": null,
+        "preferred_installments": 3,
+        "requested_discount_pct": null
+      },
+      "check": "customer_intent matches catalog",
+      "critical": true,
+      "expected": {
+        "available_now": "300.00",
+        "desired_date": null,
+        "preferred_installments": 3,
+        "requested_discount_pct": null
+      },
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "PASSED",
+      "check": "policy_check is PASSED",
+      "critical": true,
+      "expected": "PASSED",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "PASSED",
+      "check": "text_number_check is PASSED",
+      "critical": true,
+      "expected": "PASSED",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": false,
+      "check": "PayPal not called during drafting",
+      "critical": true,
+      "expected": false,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": 2,
+      "check": "two alternatives offered",
+      "critical": true,
+      "expected": 2,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "900.00",
+      "check": "schedule total equals total_paid",
+      "critical": true,
+      "expected": "900.00",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "900.00",
+      "check": "first schedule row equals amount_due_now",
+      "critical": true,
+      "expected": "900.00",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "900.00",
+      "check": "settlement total equals amount_due_now",
+      "critical": true,
+      "expected": "900.00",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "1021.10",
+      "check": "schedule total equals total_paid",
+      "critical": true,
+      "expected": "1021.10",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "300.00",
+      "check": "first schedule row equals amount_due_now",
+      "critical": true,
+      "expected": "300.00",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": 4,
+      "check": "installment schedule length is installments + 1",
+      "critical": true,
+      "expected": 4,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "down_payment_installments",
+        "settlement_discount"
+      ],
+      "check": "chosen alternative is offered",
+      "critical": true,
+      "expected": "down_payment_installments",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "900.00",
+      "check": "S01 settlement amount_due_now",
+      "critical": true,
+      "expected": "900.00",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "-100.00",
+      "check": "S01 settlement merchant difference",
+      "critical": true,
+      "expected": "-100.00",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "300.00",
+      "check": "S01 plan amount_due_now",
+      "critical": true,
+      "expected": "300.00",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "240.37",
+      "check": "S01 plan installment_amount",
+      "critical": true,
+      "expected": "240.37",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "1021.10",
+      "check": "S01 plan total_paid",
+      "critical": true,
+      "expected": "1021.10",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "1006.91",
+      "check": "S01 plan present_value",
+      "critical": true,
+      "expected": "1006.91",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "6.91",
+      "check": "S01 plan merchant difference",
+      "critical": true,
+      "expected": "6.91",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "300.00",
+        "240.37",
+        "240.37",
+        "240.36"
+      ],
+      "check": "S01 schedule amounts",
+      "critical": true,
+      "expected": [
+        "300.00",
+        "240.37",
+        "240.37",
+        "240.36"
+      ],
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": 200,
+      "check": "approve HTTP 200",
+      "critical": true,
+      "expected": 200,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "PENDING_CUSTOMER",
+      "check": "approve status PENDING_CUSTOMER",
+      "critical": true,
+      "expected": "PENDING_CUSTOMER",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "down_payment_installments",
+      "check": "approved alternative",
+      "critical": true,
+      "expected": "down_payment_installments",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": true,
+      "check": "customer link issued",
+      "critical": true,
+      "expected": true,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": 200,
+      "check": "customer view HTTP 200",
+      "critical": true,
+      "expected": 200,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "PENDING_CUSTOMER",
+      "check": "customer view status PENDING_CUSTOMER",
+      "critical": true,
+      "expected": "PENDING_CUSTOMER",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "1000.00",
+      "check": "customer view original balance",
+      "critical": true,
+      "expected": "1000.00",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "alternative",
+        "currency",
+        "customer_message",
+        "expires_at",
+        "invoice_id",
+        "original_balance",
+        "proposal_id",
+        "simulation_notice",
+        "status"
+      ],
+      "check": "customer view keys",
+      "critical": true,
+      "expected": [
+        "alternative",
+        "currency",
+        "customer_message",
+        "expires_at",
+        "invoice_id",
+        "original_balance",
+        "proposal_id",
+        "simulation_notice",
+        "status"
+      ],
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "amount_due_now",
+        "installment_amount",
+        "schedule",
+        "terms",
+        "total_paid",
+        "type"
+      ],
+      "check": "customer alternative keys",
+      "critical": true,
+      "expected": [
+        "amount_due_now",
+        "installment_amount",
+        "schedule",
+        "terms",
+        "total_paid",
+        "type"
+      ],
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "down_payment_installments",
+      "check": "customer view alternative type",
+      "critical": true,
+      "expected": "down_payment_installments",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "300.00",
+      "check": "customer view amount matches proposal",
+      "critical": true,
+      "expected": "300.00",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "1021.10",
+      "check": "customer view total matches proposal",
+      "critical": true,
+      "expected": "1021.10",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": false,
+      "check": "customer view hides present_value",
+      "critical": true,
+      "expected": false,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": false,
+      "check": "customer view hides merchant_difference_vs_balance",
+      "critical": true,
+      "expected": false,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": false,
+      "check": "customer view hides policy_check",
+      "critical": true,
+      "expected": false,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": false,
+      "check": "customer view hides blocked_reasons",
+      "critical": true,
+      "expected": false,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": 200,
+      "check": "respond HTTP 200",
+      "critical": true,
+      "expected": 200,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "EXECUTED",
+      "check": "respond status EXECUTED",
+      "critical": true,
+      "expected": "EXECUTED",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "MOCK-INV-8AC32B72",
+      "check": "mock PayPal invoice created",
+      "critical": true,
+      "expected": "MOCK-INV-*",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "preflight_ok",
+        "draft_created",
+        "original_cancelled",
+        "draft_sent"
+      ],
+      "check": "execution steps complete",
+      "critical": true,
+      "expected": [
+        "preflight_ok",
+        "draft_created",
+        "original_cancelled",
+        "draft_sent"
+      ],
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": 200,
+      "check": "webhook HTTP 200",
+      "critical": true,
+      "expected": 200,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": true,
+      "check": "webhook received",
+      "critical": true,
+      "expected": true,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": 200,
+      "check": "final proposal HTTP 200",
+      "critical": true,
+      "expected": 200,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "PAID",
+      "check": "final status PAID",
+      "critical": true,
+      "expected": "PAID",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "MOCK-INV-8AC32B72",
+      "check": "final PayPal invoice id",
+      "critical": true,
+      "expected": "MOCK-INV-8AC32B72",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "PROPOSAL_DRAFTED",
+        "PROPOSAL_APPROVED",
+        "CUSTOMER_LINK_ISSUED",
+        "CUSTOMER_ACCEPTED",
+        "EXECUTION_STARTED",
+        "PAYPAL_DRAFT_CREATED",
+        "PAYPAL_ORIGINAL_CANCELLED",
+        "PAYPAL_INVOICE_SENT",
+        "EXECUTION_COMPLETED",
+        "PAYMENT_CONFIRMED"
+      ],
+      "check": "full audit trail",
+      "critical": true,
+      "expected": [
+        "PROPOSAL_DRAFTED",
+        "PROPOSAL_APPROVED",
+        "CUSTOMER_LINK_ISSUED",
+        "CUSTOMER_ACCEPTED",
+        "EXECUTION_STARTED",
+        "PAYPAL_DRAFT_CREATED",
+        "PAYPAL_ORIGINAL_CANCELLED",
+        "PAYPAL_INVOICE_SENT",
+        "EXECUTION_COMPLETED",
+        "PAYMENT_CONFIRMED"
+      ],
+      "note": null,
+      "passed": true
+    }
+  ],
+  "evidence_dir": "docs/evidence/F1-23/phase-b/regression/S01",
+  "executed_at": "2026-11-11T00:37:29.015801+00:00",
+  "http_status": 200,
+  "proposal_id": "prop_4b339253aeca",
+  "scenario_id": "S01",
+  "scenario_name": "S01_partial_payment_now",
+  "status": "PASS",
+  "steps": [
+    {
+      "blocked_reason": null,
+      "http_status": 200,
+      "status": "PENDING_MERCHANT",
+      "step": "create_proposal"
+    }
+  ]
+}

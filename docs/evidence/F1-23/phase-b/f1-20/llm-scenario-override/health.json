@@ -1,0 +1,10 @@
+{
+  "body": {
+    "agent_mode": "llm",
+    "demo_mode": true,
+    "engine_version": "1.0.0",
+    "paypal_mode": "mock",
+    "status": "ok"
+  },
+  "status_code": 200
+}

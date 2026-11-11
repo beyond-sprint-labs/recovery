@@ -1,0 +1,26 @@
+{
+  "actual_exit": 1,
+  "command": [
+    "C:\\Users\\PC\\Desktop\\Camilo\\repos\\recovery-official\\.venv\\Scripts\\python.exe",
+    "-m",
+    "app.seed.sandbox_bootstrap"
+  ],
+  "environment": {
+    "APP_ENV": "local",
+    "DATABASE_URL": "sqlite:///C:/Users/PC/AppData/Local/Temp/f1-23-b-sandbox-mock-pdsbwtnc/qa.db",
+    "DEMO_MODE": "false",
+    "PAYPAL_BASE_URL": "https://api-m.sandbox.paypal.com",
+    "PAYPAL_MODE": "mock",
+    "PAYPAL_SANDBOX_BUYER_EMAIL": "buyer@example.com",
+    "PUBLIC_BASE_URL": "http://localhost:8000"
+  },
+  "expected_exit": 1,
+  "expected_fragments": [
+    "Sandbox bootstrap requires PAYPAL_MODE=real"
+  ],
+  "missing_fragments": [],
+  "passed": true,
+  "probe": "F1-11 Sandbox bootstrap rejects PAYPAL_MODE=mock",
+  "stderr": "Sandbox bootstrap requires PAYPAL_MODE=real\n",
+  "stdout": ""
+}

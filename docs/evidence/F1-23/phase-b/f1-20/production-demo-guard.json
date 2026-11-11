@@ -1,0 +1,29 @@
+{
+  "actual_exit": 0,
+  "command": [
+    "C:\\Users\\PC\\Desktop\\Camilo\\repos\\recovery-official\\.venv\\Scripts\\python.exe",
+    "-c",
+    "from app.core.config import Settings\n\ntry:\n    Settings()\nexcept BaseException as exc:\n    message = str(exc)\n    print(type(exc).__name__ + \": \" + message)\n    raise SystemExit(0 if \"DEMO_MODE=true is forbidden\" in message else 1)\nraise SystemExit(1)"
+  ],
+  "environment": {
+    "AGENT_MODE": "llm",
+    "APP_ENV": "production",
+    "DATABASE_URL": "sqlite:///C:/Users/PC/AppData/Local/Temp/f1-23-b-prod-guard-f6k_vd7w/qa.db",
+    "DEMO_MODE": "true",
+    "LLM_API_KEY": "fake-test-key",
+    "LLM_MODEL": "gemini-test",
+    "LLM_PROVIDER": "gemini",
+    "PAYPAL_MODE": "real",
+    "PUBLIC_BASE_URL": "http://localhost:8000"
+  },
+  "expected_exit": 0,
+  "expected_fragments": [
+    "ValidationError",
+    "DEMO_MODE=true is forbidden"
+  ],
+  "missing_fragments": [],
+  "passed": true,
+  "probe": "F1-20 production guard rejects DEMO_MODE=true",
+  "stderr": "",
+  "stdout": "ValidationError: 1 validation error for Settings\n  Value error, DEMO_MODE=true is forbidden when APP_ENV=production [type=value_error, input_value={'app_env': 'production',...i_key': 'fake-test-key'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/value_error\n"
+}

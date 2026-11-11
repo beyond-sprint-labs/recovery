@@ -1,0 +1,51 @@
+{
+  "body": [
+    {
+      "balance": "1000.00",
+      "currency": "USD",
+      "customer_name": "Northwind Demo LLC",
+      "due_date": "2026-10-15",
+      "id": "INV-001",
+      "paypal_invoice_id": "MOCK-INV-C7CDFE08",
+      "status": "OVERDUE"
+    },
+    {
+      "balance": "250.50",
+      "currency": "USD",
+      "customer_name": "Contoso Demo Studio",
+      "due_date": "2026-09-30",
+      "id": "INV-002",
+      "paypal_invoice_id": "MOCK-INV-346A9E55",
+      "status": "OVERDUE"
+    },
+    {
+      "balance": "1500.00",
+      "currency": "USD",
+      "customer_name": "Fabrikam Demo Services",
+      "due_date": "2026-10-31",
+      "id": "INV-003",
+      "paypal_invoice_id": "MOCK-INV-A605D592",
+      "status": "OVERDUE"
+    },
+    {
+      "balance": "0.00",
+      "currency": "USD",
+      "customer_name": "Northwind Demo LLC",
+      "due_date": "2026-09-15",
+      "id": "INV-004",
+      "paypal_invoice_id": null,
+      "status": "PAID"
+    },
+    {
+      "balance": "400.00",
+      "currency": "USD",
+      "customer_name": "Contoso Demo Studio",
+      "due_date": "2026-08-31",
+      "id": "INV-005",
+      "paypal_invoice_id": null,
+      "status": "CANCELLED"
+    }
+  ],
+  "status_code": 200,
+  "ts": "2026-11-11T00:37:28.769817+00:00"
+}

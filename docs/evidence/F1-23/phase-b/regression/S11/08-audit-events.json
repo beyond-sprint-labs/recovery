@@ -1,0 +1,41 @@
+{
+  "body": {
+    "items": [
+      {
+        "action": "PROPOSAL_BLOCKED",
+        "actor": {
+          "id": "text_guard",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000001",
+        "invoice_id": "INV-001",
+        "paypal_called": false,
+        "paypal_ref": null,
+        "proposal_id": "prop_096bb6863971",
+        "proposed_by": {
+          "id": "agent_v1",
+          "mode": "DEMO",
+          "type": "AGENT"
+        },
+        "rule": {
+          "attempted": "850.00",
+          "code": "TEXT_NUMBER_MISMATCH",
+          "limit": null,
+          "message": "Generated text contains figures the finance engine did not produce",
+          "unit": "figures"
+        },
+        "seq": 1,
+        "severity": "CRITICAL",
+        "source": null,
+        "state_from": "DRAFTED",
+        "state_to": "BLOCKED",
+        "summary": "AI-generated text contains figures not produced by the finance engine (850.00); PayPal not called",
+        "ts": "2026-11-11T00:37:30Z"
+      }
+    ],
+    "next_seq": 1
+  },
+  "status_code": 200,
+  "ts": "2026-11-11T00:37:30.330298+00:00"
+}

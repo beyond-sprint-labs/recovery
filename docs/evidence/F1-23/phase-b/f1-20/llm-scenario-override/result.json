@@ -1,0 +1,51 @@
+{
+  "checks": [
+    {
+      "actual": "200 with agent_mode=llm",
+      "check": "health reports AGENT_MODE=llm",
+      "critical": true,
+      "expected": "200 with agent_mode=llm",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "200 / PENDING_MERCHANT",
+      "check": "scenario override returns PENDING_MERCHANT",
+      "critical": true,
+      "expected": "200 / PENDING_MERCHANT",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "300.00",
+      "check": "scripted intent is used instead of a live LLM call",
+      "critical": true,
+      "expected": "available_now=300.00",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "PROPOSAL_DRAFTED"
+      ],
+      "check": "proposal audit trail is persisted",
+      "critical": true,
+      "expected": "PROPOSAL_DRAFTED present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "PROPOSAL_DRAFTED"
+      ],
+      "check": "no fallback audit is emitted for the scripted override",
+      "critical": true,
+      "expected": "LLM_FALLBACK_ACTIVATED absent",
+      "note": null,
+      "passed": true
+    }
+  ],
+  "note": "No live Gemini call is made: a non-null scenario_id selects the scripted agent before GeminiClient is constructed. This validates wiring and the scenario override, not live LLM quality.",
+  "probe": "F1-20 scenario override in AGENT_MODE=llm",
+  "status": "PASS"
+}

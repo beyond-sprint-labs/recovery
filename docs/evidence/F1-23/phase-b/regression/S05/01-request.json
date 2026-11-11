@@ -1,0 +1,12 @@
+{
+  "body": {
+    "customer_message": "I am uncertain how to proceed as business has been slow. I may have some funds available next month, perhaps less than half the total. What are my options?",
+    "scenario_id": "S05_ambiguous_slow_business"
+  },
+  "headers": {
+    "Idempotency-Key": "qa-f1-23-s05-20907596f8c84cc4a6075a5c25840524"
+  },
+  "method": "POST",
+  "path": "/api/v1/invoices/INV-001/proposals",
+  "ts": "2026-11-11T00:37:29.629031+00:00"
+}

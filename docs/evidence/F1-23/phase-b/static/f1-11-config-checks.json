@@ -1,0 +1,82 @@
+{
+  "checks": [
+    {
+      "actual": "LLM_PROVIDER present",
+      "check": ".env.example documents LLM_PROVIDER",
+      "critical": true,
+      "expected": "LLM_PROVIDER present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "LLM_MODEL present",
+      "check": ".env.example documents LLM_MODEL",
+      "critical": true,
+      "expected": "LLM_MODEL present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "LLM_API_KEY present",
+      "check": ".env.example documents LLM_API_KEY",
+      "critical": true,
+      "expected": "LLM_API_KEY present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "PAYPAL_SANDBOX_BUYER_EMAIL present",
+      "check": ".env.example documents PAYPAL_SANDBOX_BUYER_EMAIL",
+      "critical": true,
+      "expected": "PAYPAL_SANDBOX_BUYER_EMAIL present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "ALLOW_SANDBOX_PAYMENT_SHORTCUT present",
+      "check": ".env.example documents ALLOW_SANDBOX_PAYMENT_SHORTCUT",
+      "critical": true,
+      "expected": "ALLOW_SANDBOX_PAYMENT_SHORTCUT present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "PUBLIC_BASE_URL present",
+      "check": ".env.example documents PUBLIC_BASE_URL",
+      "critical": true,
+      "expected": "PUBLIC_BASE_URL present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "python -m app.seed.sandbox_bootstrap missing",
+      "check": "DEPLOY.md documents python -m app.seed.sandbox_bootstrap",
+      "critical": true,
+      "expected": "python -m app.seed.sandbox_bootstrap present",
+      "note": null,
+      "passed": false
+    },
+    {
+      "actual": "PAYPAL_WEBHOOK_ID present",
+      "check": "DEPLOY.md documents PAYPAL_WEBHOOK_ID",
+      "critical": true,
+      "expected": "PAYPAL_WEBHOOK_ID present",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "PAYPAL_SANDBOX_BUYER_EMAIL present",
+      "check": "DEPLOY.md documents PAYPAL_SANDBOX_BUYER_EMAIL",
+      "critical": true,
+      "expected": "PAYPAL_SANDBOX_BUYER_EMAIL present",
+      "note": null,
+      "passed": true
+    }
+  ],
+  "evidence": {
+    "deploy_guide": "docs/DEPLOY.md",
+    "env_example": ".env.example"
+  },
+  "probe": "F1-11 deployment template and guide completeness",
+  "status": "FAIL"
+}

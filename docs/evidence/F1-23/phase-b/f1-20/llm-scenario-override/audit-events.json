@@ -1,0 +1,30 @@
+{
+  "body": {
+    "items": [
+      {
+        "action": "PROPOSAL_DRAFTED",
+        "actor": {
+          "id": "recovery_service",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000001",
+        "invoice_id": "INV-001",
+        "paypal_called": false,
+        "paypal_ref": null,
+        "proposal_id": "prop_ba3775e805d3",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 1,
+        "severity": "INFO",
+        "source": null,
+        "state_from": "DRAFTED",
+        "state_to": "PENDING_MERCHANT",
+        "summary": "2 alternatives drafted within policy; awaiting merchant approval",
+        "ts": "2026-11-11T00:21:18Z"
+      }
+    ],
+    "next_seq": 1
+  },
+  "status_code": 200
+}

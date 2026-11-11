@@ -1,0 +1,47 @@
+{
+  "generated_at": "2026-11-11T00:29:11Z",
+  "phase": "B",
+  "ui_branch": "origin/feat/ui-final-integration",
+  "ui_commit": "5f88861aff56fe158c9b4a8cf7a99f7eb904b0bf",
+  "worktree": "C:\\Users\\PC\\AppData\\Local\\Temp\\recovery-ui-phase-b-da196bbfecb34c9a8ae1802eea28d69d",
+  "checks": [
+    {
+      "check": "npm ci succeeds",
+      "passed": true,
+      "expected": "exit 0",
+      "actual": "exit 0"
+    },
+    {
+      "check": "production build succeeds",
+      "passed": false,
+      "expected": "exit 0",
+      "actual": "exit 1",
+      "note": "TypeScript reports src/api/client.ts(85,5): 'mockAuditCursor' is declared but its value is never read."
+    },
+    {
+      "check": "Vite dev server starts",
+      "passed": true,
+      "expected": "HTTP 200 at http://127.0.0.1:5173",
+      "actual": "ready"
+    },
+    {
+      "check": "landing page renders",
+      "passed": true,
+      "expected": "hero copy present",
+      "actual": "present"
+    },
+    {
+      "check": "dashboard renders invoices",
+      "passed": true,
+      "expected": "Overview and INV-001 present",
+      "actual": "present"
+    },
+    {
+      "check": "screenshots captured",
+      "passed": true,
+      "expected": "landing and dashboard PNGs",
+      "actual": "landing=True, app=True"
+    }
+  ],
+  "status": "FAIL"
+}
