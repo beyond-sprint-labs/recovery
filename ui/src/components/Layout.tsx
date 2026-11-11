@@ -15,7 +15,7 @@ export function Layout() {
   return (
     <div className="app">
       <header className="topbar">
-        {/* Clickable logo to return to the landing page */}
+        {/* Clickable logo to return to Landing */}
         <div className="brand" onClick={() => { navigate('/'); setShowSecureMsg(false); }} style={{ cursor: 'pointer' }}>
           <div 
             className="brand-logo" 

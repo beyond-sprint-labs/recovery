@@ -359,3 +359,20 @@ h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 2
   background: transparent !important;
   box-shadow: none !important;
 }
+/* Brand button (used in Reconcile) */
+.btn-brand {
+  background: var(--brand-primary);
+  color: white;
+  border: none;
+}
+.btn-brand:hover:not(:disabled) {
+  background: var(--brand-hover);
+}
+
+/* Pills for all stages of the roadmap */
+.pill-needs_reconciliation { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.pill-executing { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+.pill-expired { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+.pill-declined { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.pill-failed { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.pill-pending_customer { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }

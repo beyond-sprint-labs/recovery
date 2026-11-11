@@ -4,12 +4,7 @@
   "paypal": {
     "new_invoice_id": "PP-INV-NEW-7f3a9c",
     "original_invoice_id": "PP-INV-ORIG-001",
-    "steps": [
-      { "name": "preflight", "status": "OK", "ref": "PP-INV-ORIG-001", "at": "2026-11-02T15:05:35Z" },
-      { "name": "draft_created", "status": "OK", "ref": "PP-INV-DRAFT-7f3a9c", "at": "2026-11-02T15:05:36Z" },
-      { "name": "original_cancelled", "status": "OK", "ref": "PP-INV-ORIG-001", "at": "2026-11-02T15:05:37Z" },
-      { "name": "invoice_sent", "status": "OK", "ref": "PP-INV-NEW-7f3a9c", "at": "2026-11-02T15:05:38Z" }
-    ]
+    "steps": ["preflight_ok", "draft_created", "original_cancelled", "draft_sent"]
   },
   "audit_events": [
     {

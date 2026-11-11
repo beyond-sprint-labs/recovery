@@ -82,7 +82,6 @@ function uuid(): string {
 }
 
 // ---------- State for mock audit stream ----------
-let mockAuditCursor = 0;
 let mockStreamItems: import("../types/api").AuditEvent[] = [];
 let mockStreamLoaded = false;
 let mockProposalCounter = 0;
@@ -96,7 +95,6 @@ async function ensureStreamLoaded(): Promise<void> {
     "../mocks/audit_events.stream.json",
   );
   mockStreamItems = [...seed.items, ...stream.items];
-  mockAuditCursor = seed.next_seq;
   mockStreamLoaded = true;
 }
 

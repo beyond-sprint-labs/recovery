@@ -13,7 +13,7 @@ export function InvoicesPage() {
   const [error, setError] = useState<string | null>(null);
   const [proposing, setProposing] = useState<string | null>(null);
   const [scenario, setScenario] = useState<string>("");
-  const [message, setMessage] = useState<string>("I can pay part now, can we work something out?");
+  const [message, setMessage] = useState<string>("I can pay 300 today and the rest in 3 monthly installments.");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,6 +50,7 @@ export function InvoicesPage() {
   );
 
   async function onPropose(invoice: Invoice) {
+    console.log("Enviando scenario_id:", scenario); // <-- AÑADE ESTO
     setProposing(invoice.id);
     setError(null);
     try {
@@ -94,6 +95,7 @@ export function InvoicesPage() {
         <label>
           Scenario (demo)
           <select value={scenario} onChange={(e) => setScenario(e.target.value)}>
+            <option value="">Real AI (no scripted scenario)</option>
             <option value="S01_partial_payment_now">S01 · Partial payment (SUCCESS)</option>
             <option value="S02_reasonable_discount">S02 · Reasonable discount (SUCCESS)</option>
             <option value="S03_exceeds_discount">S03 · Exceeds discount (BLOCKED)</option>
