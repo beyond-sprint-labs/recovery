@@ -1,6 +1,16 @@
 # DueGuide
 ### Turn overdue into opportunity.
 
+[![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-v0.115-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![PayPal Invoicing v2](https://img.shields.io/badge/PayPal-Invoicing%20API%20v2-003087?style=flat&logo=paypal&logoColor=white)](https://developer.paypal.com/)
+[![AG Grid](https://img.shields.io/badge/AG%20Grid-Community-brightgreen?style=flat)](https://www.ag-grid.com/)
+[![Google Gemini](https://img.shields.io/badge/Google-Gemini%201.5-4285F4?style=flat&logo=google&logoColor=white)](https://ai.google.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev/)
+[![SQLite WAL](https://img.shields.io/badge/SQLite-WAL%20Mode-003B57?style=flat&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **AI-powered invoice recovery. Merchant-controlled decisions. PayPal-powered execution.**
 
 An overdue invoice shouldn't automatically become a lost customer.
@@ -33,6 +43,13 @@ Merchants need a way to evaluate these requests without sacrificing financial co
 
 **AI assists. Financial rules constrain. Humans authorize. PayPal executes.**
 
+###  Quick Demo for Judges: The 30-Second "Wow Factor"
+Experience Policy-Controlled Autonomy in three steps:
+1. Open overdue invoice **INV-001** ($1,000.00).
+2. Submit this customer message: *"Can I get 40% off if I pay this week?"*
+3. **Observe the system boundary:** Google Gemini extracts the requested 40% discount, but the **backend server-side policy halts execution in real time**. 
+4. The **Live AG Grid** immediately flashes red with a **`PROPOSAL_BLOCKED`** audit event (`rule: MAX_DISCOUNT_PCT`, attempted: 40%, merchant limit: 15%, `paypal_called: false`).
+
 ## Technology Stack
 
 | Layer | Technology | Purpose |
@@ -50,13 +67,13 @@ Merchants need a way to evaluate these requests without sacrificing financial co
 
 ## PayPal Integration
 
-DueGuide integrates the **PayPal Invoicing API v2** using the free PayPal Sandbox environment.
+### Deterministic Anti-Double-Charge Guarantee
+Replacing an overdue invoice enforces an atomic 4-step sequence confirmed in Sandbox:
+$$\text{Preflight} \longrightarrow \text{Create Draft (DRAFT)} \longrightarrow \text{Cancel Original (204)} \longrightarrow \text{Send Draft (200)}$$
 
-The integration supports invoice creation, sending and cancellation as part of the controlled renegotiation workflow.
-
-After merchant approval and customer acceptance, the backend coordinates the supported invoice operations. Webhooks provide payment-related events that can update application state and the audit trail.
-
-The system includes idempotency safeguards, lifecycle validation, and reconciliation handling to reduce the risk of duplicate or inconsistent operations.
+- **Preflight Inspection:** Queries the original invoice and aborts immediately if payments already exist (`PARTIALLY_PAID` / `PAID`), preventing orphaned cancel operations.
+- **Atomic Rollback:** If cancelling the original invoice fails, `delete_draft` immediately purges the newly created draft. At no instant in time are two payable invoices open concurrently.
+- **Fail-Closed Reconciliation:** If sending fails after cancellation, the proposal enters non-reversible `NEEDS_RECONCILIATION`, allowing manual or lazy retry of the send step only (PayPal never "un-cancels").
 
 **PayPal execution is never authorized solely by AI-generated text.**
 
