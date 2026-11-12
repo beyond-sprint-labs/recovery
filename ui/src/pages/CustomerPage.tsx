@@ -9,7 +9,6 @@ import type {
 } from "../types/api";
 import { formatMoney } from "../components/Money";
 import { SecurePlaceholder } from "../components/SecurePlaceholder";
-import { SimulationNotice } from "../components/SimulationNotice";
 
 const TOKEN_ERRORS: Record<string, string> = {
   TOKEN_EXPIRED: "This link has expired. Please contact the merchant for a new proposal.",
@@ -286,14 +285,22 @@ export function CustomerPage() {
           >
             Return to Home
           </button>
-          <div style={{ marginTop: "24px" }}>
-            <SimulationNotice />
-            <p className="muted" style={{ fontSize: "12px", marginTop: "8px" }}>
+          
+          <p
+            className="muted"
+            style={{
+              fontSize: "12px",
+              marginTop: "24px",
+              lineHeight: 1.5,
+              maxWidth: "420px",
+              marginLeft: "auto",
+              marginRight: "auto",
+           }}
+          >
               {view.simulation_notice}
             </p>
           </div>
         </div>
-      </div>
     );
   }
 
@@ -397,12 +404,20 @@ export function CustomerPage() {
           </p>
         )}
 
-        <div style={{ marginTop: "24px", textAlign: "center" }}>
-          <SimulationNotice />
-          <p className="muted" style={{ fontSize: "12px", marginTop: "8px" }}>
-            {view.simulation_notice}
-          </p>
-        </div>
+        <p
+          className="muted"
+          style={{
+            fontSize: "12px",
+            textAlign: "center",
+            marginTop: "24px",
+            lineHeight: 1.5,
+            maxWidth: "420px",
+            marginLeft: "auto",
+            marginRight: "auto",
+          }}
+        >
+          {view.simulation_notice}
+        </p>
       </div>
     </div>
   );
