@@ -1,0 +1,12 @@
+{
+  "body": {
+    "customer_message": "I need a 150% discount.",
+    "scenario_id": "S10_invalid_discount_150"
+  },
+  "headers": {
+    "Idempotency-Key": "qa-f1-23-s10-f3da1c3c003c4bbf8b7b441b935eff32"
+  },
+  "method": "POST",
+  "path": "/api/v1/invoices/INV-001/proposals",
+  "ts": "2026-11-11T01:00:04.791893+00:00"
+}

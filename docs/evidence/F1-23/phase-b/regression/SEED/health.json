@@ -1,0 +1,11 @@
+{
+  "body": {
+    "agent_mode": "scripted",
+    "demo_mode": true,
+    "engine_version": "1.0.0",
+    "paypal_mode": "mock",
+    "status": "ok"
+  },
+  "status_code": 200,
+  "ts": "2026-11-11T01:00:03.418962+00:00"
+}

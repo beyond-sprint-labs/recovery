@@ -1,0 +1,241 @@
+{
+  "actual_code": null,
+  "actual_status": "N/A",
+  "api_expected_code": null,
+  "api_expected_status": "N/A",
+  "catalog_outcome": "N/A",
+  "category": "data_integrity",
+  "checks": [
+    {
+      "actual": 200,
+      "check": "health HTTP 200",
+      "critical": true,
+      "expected": 200,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "ok",
+      "check": "health status ok",
+      "critical": true,
+      "expected": "ok",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": true,
+      "check": "demo mode enabled",
+      "critical": true,
+      "expected": true,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "mock",
+      "check": "PayPal mode mock",
+      "critical": true,
+      "expected": "mock",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": "scripted",
+      "check": "agent mode scripted",
+      "critical": true,
+      "expected": "scripted",
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": 200,
+      "check": "invoices HTTP 200",
+      "critical": true,
+      "expected": 200,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": {
+        "INV-001": [
+          "1000.00",
+          "OVERDUE"
+        ],
+        "INV-002": [
+          "250.50",
+          "OVERDUE"
+        ],
+        "INV-003": [
+          "1500.00",
+          "OVERDUE"
+        ],
+        "INV-004": [
+          "0.00",
+          "PAID"
+        ],
+        "INV-005": [
+          "400.00",
+          "CANCELLED"
+        ]
+      },
+      "check": "seed invoice balances and statuses",
+      "critical": true,
+      "expected": {
+        "INV-001": [
+          "1000.00",
+          "OVERDUE"
+        ],
+        "INV-002": [
+          "250.50",
+          "OVERDUE"
+        ],
+        "INV-003": [
+          "1500.00",
+          "OVERDUE"
+        ],
+        "INV-004": [
+          "0.00",
+          "PAID"
+        ],
+        "INV-005": [
+          "400.00",
+          "CANCELLED"
+        ]
+      },
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [],
+      "check": "no customer email leaked",
+      "critical": true,
+      "expected": true,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": {
+        "INV-001": "MOCK-INV-31852E80",
+        "INV-002": "MOCK-INV-FA8294E4",
+        "INV-003": "MOCK-INV-1E931B59"
+      },
+      "check": "overdue invoices linked to mock PayPal",
+      "critical": true,
+      "expected": true,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "1000.00",
+        "OVERDUE"
+      ],
+      "check": "INV-001 detail",
+      "critical": true,
+      "expected": [
+        "1000.00",
+        "OVERDUE"
+      ],
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "250.50",
+        "OVERDUE"
+      ],
+      "check": "INV-002 detail",
+      "critical": true,
+      "expected": [
+        "250.50",
+        "OVERDUE"
+      ],
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "1500.00",
+        "OVERDUE"
+      ],
+      "check": "INV-003 detail",
+      "critical": true,
+      "expected": [
+        "1500.00",
+        "OVERDUE"
+      ],
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "0.00",
+        "PAID"
+      ],
+      "check": "INV-004 detail",
+      "critical": true,
+      "expected": [
+        "0.00",
+        "PAID"
+      ],
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": [
+        "400.00",
+        "CANCELLED"
+      ],
+      "check": "INV-005 detail",
+      "critical": true,
+      "expected": [
+        "400.00",
+        "CANCELLED"
+      ],
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": 200,
+      "check": "policy HTTP 200",
+      "critical": true,
+      "expected": 200,
+      "note": null,
+      "passed": true
+    },
+    {
+      "actual": {
+        "currency": "USD",
+        "max_discount_pct": "15",
+        "max_financing_rate_pct": "2.0",
+        "max_installments": 6,
+        "merchant_discount_rate_pct": "1.0",
+        "min_down_payment_pct": "20"
+      },
+      "check": "policy values",
+      "critical": true,
+      "expected": {
+        "currency": "USD",
+        "max_discount_pct": "15",
+        "max_financing_rate_pct": "2.0",
+        "max_installments": 6,
+        "merchant_discount_rate_pct": "1.0",
+        "min_down_payment_pct": "20"
+      },
+      "note": null,
+      "passed": true
+    }
+  ],
+  "evidence_dir": "docs/evidence/F1-23/phase-b/regression/SEED",
+  "executed_at": "2026-11-11T01:00:03.492601+00:00",
+  "http_status": 200,
+  "proposal_id": null,
+  "scenario_id": "SEED",
+  "scenario_name": "Seed and policy data validation",
+  "status": "PASS",
+  "steps": [
+    {
+      "checks": 16,
+      "step": "seed_validation"
+    }
+  ]
+}

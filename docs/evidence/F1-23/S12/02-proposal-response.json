@@ -1,0 +1,98 @@
+{
+  "body": {
+    "alternatives": [],
+    "approved_alternative": null,
+    "attempted": [
+      {
+        "computed": {
+          "amount_due_now": "600.00",
+          "merchant_difference_vs_balance": "-400.00"
+        },
+        "terms": {
+          "discount_pct": "40"
+        },
+        "type": "settlement_discount"
+      }
+    ],
+    "audit_event": {
+      "action": "PROPOSAL_BLOCKED",
+      "actor": {
+        "id": "policy_engine",
+        "mode": null,
+        "type": "SYSTEM"
+      },
+      "event_id": "aud_000002",
+      "invoice_id": "INV-001",
+      "paypal_called": false,
+      "paypal_ref": null,
+      "proposal_id": "prop_7bc624761d28",
+      "proposed_by": {
+        "id": "agent_v1",
+        "mode": "DEMO",
+        "type": "AGENT"
+      },
+      "rule": {
+        "attempted": "40",
+        "code": "MAX_DISCOUNT_PCT",
+        "limit": "15",
+        "message": null,
+        "unit": "pct"
+      },
+      "seq": 2,
+      "severity": "CRITICAL",
+      "source": null,
+      "state_from": "DRAFTED",
+      "state_to": "BLOCKED",
+      "summary": "AI-proposed 40% settlement discount exceeds merchant limit of 15%; PayPal not called",
+      "ts": "2026-11-10T17:10:30Z"
+    },
+    "blocked_reasons": [
+      {
+        "attempted": "40",
+        "code": "MAX_DISCOUNT_PCT",
+        "limit": "15",
+        "message": "Requested discount 40% exceeds merchant limit 15%",
+        "unit": "pct"
+      }
+    ],
+    "currency": "USD",
+    "customer_intent": {
+      "available_now": null,
+      "desired_date": null,
+      "preferred_installments": null,
+      "requested_discount_pct": "40"
+    },
+    "customer_message_draft": null,
+    "engine_version": "1.0.0",
+    "explanation": null,
+    "invoice_id": "INV-001",
+    "paypal": null,
+    "paypal_called": false,
+    "policy_check": {
+      "status": "BLOCKED",
+      "violations": [
+        {
+          "attempted": "40",
+          "code": "MAX_DISCOUNT_PCT",
+          "limit": "15",
+          "message": null,
+          "unit": "pct"
+        }
+      ]
+    },
+    "proposal_id": "prop_7bc624761d28",
+    "status": "BLOCKED",
+    "text_number_check": {
+      "numbers_in_text": [],
+      "status": "SKIPPED",
+      "unmatched": []
+    }
+  },
+  "headers": {
+    "content-length": "1486",
+    "content-type": "application/json",
+    "vary": "Origin"
+  },
+  "status_code": 200,
+  "ts": "2026-11-10T17:10:30.516734+00:00"
+}

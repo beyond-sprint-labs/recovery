@@ -1,0 +1,155 @@
+{
+  "body": {
+    "audit_events": [
+      {
+        "action": "CUSTOMER_ACCEPTED",
+        "actor": {
+          "id": "customer_demo",
+          "mode": null,
+          "type": "CUSTOMER"
+        },
+        "event_id": "aud_000004",
+        "invoice_id": "INV-001",
+        "paypal_called": false,
+        "paypal_ref": null,
+        "proposal_id": "prop_cf56eea3ab42",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 4,
+        "severity": "INFO",
+        "source": null,
+        "state_from": "PENDING_CUSTOMER",
+        "state_to": "ACCEPTED",
+        "summary": "Customer accepted the pre-approved option",
+        "ts": "2026-11-11T01:00:03Z"
+      },
+      {
+        "action": "EXECUTION_STARTED",
+        "actor": {
+          "id": "recovery_service",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000005",
+        "invoice_id": "INV-001",
+        "paypal_called": false,
+        "paypal_ref": null,
+        "proposal_id": "prop_cf56eea3ab42",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 5,
+        "severity": "INFO",
+        "source": null,
+        "state_from": "ACCEPTED",
+        "state_to": "EXECUTING",
+        "summary": "Execution started; replacing the original invoice in PayPal",
+        "ts": "2026-11-11T01:00:03Z"
+      },
+      {
+        "action": "PAYPAL_DRAFT_CREATED",
+        "actor": {
+          "id": "execution_service",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000006",
+        "invoice_id": "INV-001",
+        "paypal_called": true,
+        "paypal_ref": "MOCK-INV-09B97B43",
+        "proposal_id": "prop_cf56eea3ab42",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 6,
+        "severity": "INFO",
+        "source": null,
+        "state_from": null,
+        "state_to": null,
+        "summary": "Draft MOCK-INV-09B97B43 created.",
+        "ts": "2026-11-11T01:00:03Z"
+      },
+      {
+        "action": "PAYPAL_ORIGINAL_CANCELLED",
+        "actor": {
+          "id": "execution_service",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000007",
+        "invoice_id": "INV-001",
+        "paypal_called": true,
+        "paypal_ref": "MOCK-INV-8CF2BAFB",
+        "proposal_id": "prop_cf56eea3ab42",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 7,
+        "severity": "INFO",
+        "source": null,
+        "state_from": null,
+        "state_to": null,
+        "summary": "Original MOCK-INV-8CF2BAFB cancelled.",
+        "ts": "2026-11-11T01:00:03Z"
+      },
+      {
+        "action": "PAYPAL_INVOICE_SENT",
+        "actor": {
+          "id": "execution_service",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000008",
+        "invoice_id": "INV-001",
+        "paypal_called": true,
+        "paypal_ref": "MOCK-INV-09B97B43",
+        "proposal_id": "prop_cf56eea3ab42",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 8,
+        "severity": "INFO",
+        "source": null,
+        "state_from": null,
+        "state_to": null,
+        "summary": "Draft MOCK-INV-09B97B43 sent to customer.",
+        "ts": "2026-11-11T01:00:03Z"
+      },
+      {
+        "action": "EXECUTION_COMPLETED",
+        "actor": {
+          "id": "execution_service",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000009",
+        "invoice_id": "INV-001",
+        "paypal_called": true,
+        "paypal_ref": "MOCK-INV-09B97B43",
+        "proposal_id": "prop_cf56eea3ab42",
+        "proposed_by": null,
+        "rule": null,
+        "seq": 9,
+        "severity": "INFO",
+        "source": null,
+        "state_from": "EXECUTING",
+        "state_to": "EXECUTED",
+        "summary": "Replacement completed successfully.",
+        "ts": "2026-11-11T01:00:03Z"
+      }
+    ],
+    "paypal": {
+      "new_invoice_id": "MOCK-INV-09B97B43",
+      "original_invoice_id": "MOCK-INV-8CF2BAFB",
+      "steps": [
+        "preflight_ok",
+        "draft_created",
+        "original_cancelled",
+        "draft_sent"
+      ]
+    },
+    "proposal_id": "prop_cf56eea3ab42",
+    "status": "EXECUTED"
+  },
+  "request": {
+    "decision": "ACCEPT"
+  },
+  "status_code": 200,
+  "ts": "2026-11-11T01:00:03.669949+00:00"
+}

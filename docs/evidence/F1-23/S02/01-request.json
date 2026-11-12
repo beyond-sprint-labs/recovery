@@ -1,0 +1,12 @@
+{
+  "body": {
+    "customer_message": "I am unable to pay the full amount at this time. Would it be possible to split this balance into three monthly installments?",
+    "scenario_id": "S02_installments_request"
+  },
+  "headers": {
+    "Idempotency-Key": "qa-f1-23-s02-b8ca59f07a124deb98c728c5114a6d60"
+  },
+  "method": "POST",
+  "path": "/api/v1/invoices/INV-001/proposals",
+  "ts": "2026-11-10T17:10:29.502966+00:00"
+}

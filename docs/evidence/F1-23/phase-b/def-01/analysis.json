@@ -1,0 +1,33 @@
+{
+  "actual_attempted": [],
+  "actual_customer_intent": {
+    "available_now": null,
+    "desired_date": null,
+    "preferred_installments": null,
+    "requested_discount_pct": null
+  },
+  "api_reason": "INVALID_AGENT_OUTPUT",
+  "api_status": "BLOCKED",
+  "audit_actions": [
+    "PROPOSAL_BLOCKED"
+  ],
+  "can_be_resolved_with_additional_evidence": false,
+  "catalog_expected_intent": {
+    "available_now": null,
+    "desired_date": null,
+    "preferred_installments": null,
+    "requested_discount_pct": "150"
+  },
+  "conclusion": "The API correctly blocks INVALID_AGENT_OUTPUT, but neither the response nor the audit trail persists the rejected 150% intent. Additional QA evidence cannot reconstruct a value the application never stores. Resolving the traceability gap requires an application change (or an explicit decision to accept the limitation).",
+  "defect_id": "DEF-01",
+  "evidence": {
+    "audit": "docs/evidence/F1-23/phase-b/regression/S10/08-audit-events.json",
+    "response": "docs/evidence/F1-23/phase-b/regression/S10/02-proposal-response.json",
+    "result": "docs/evidence/F1-23/phase-b/regression/S10/result.json"
+  },
+  "generated_at": "2026-11-11T01:00:05.039613+00:00",
+  "phase_a_status": "PASS_WITH_OBSERVATION",
+  "phase_b_status": "OPEN",
+  "requires_application_change_if_traceability_required": true,
+  "scenario": "S10"
+}

@@ -1,0 +1,18 @@
+{
+  "base_branch": "main",
+  "base_commit": "080d0fbb9cb533dd048b9dbe1fe132fe2353d588",
+  "generated_at": "2026-11-11T01:00:00.890304+00:00",
+  "phase": "B",
+  "phase_a_branch": "qa/f1-23-phase-a",
+  "phase_a_commit": "080d0fbb9cb533dd048b9dbe1fe132fe2353d588",
+  "platform": "win32",
+  "python": "3.12.15 (main, Oct  9 2026, 15:21:55) [MSC v.1944 64 bit (AMD64)]",
+  "settings": {
+    "AGENT_MODE": "scripted",
+    "ALLOW_SCENARIO_ID": "true",
+    "APP_ENV": "local",
+    "DATABASE_URL": "temporary SQLite per scenario",
+    "DEMO_MODE": "true",
+    "PAYPAL_MODE": "mock"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "body": {
+    "balance": "250.50",
+    "currency": "USD",
+    "customer_name": "Contoso Demo Studio",
+    "due_date": "2026-09-30",
+    "id": "INV-002",
+    "paypal_invoice_id": "MOCK-INV-DEA46117",
+    "status": "OVERDUE"
+  },
+  "status_code": 200,
+  "ts": "2026-11-10T17:10:29.220999+00:00"
+}

@@ -1,0 +1,30 @@
+{
+  "actual_exit": 0,
+  "command": [
+    "C:\\Users\\PC\\Desktop\\Camilo\\repos\\recovery-official\\.venv\\Scripts\\python.exe",
+    "-c",
+    "import json\nfrom fastapi.testclient import TestClient\nfrom app.main import create_app\n\ntry:\n    with TestClient(create_app()):\n        pass\nexcept BaseException as exc:\n    message = str(exc)\n    print(json.dumps({\"type\": type(exc).__name__, \"message\": message}))\n    raise SystemExit(\n        0\n        if type(exc).__name__ == \"UpstreamError\"\n        and \"LLM configuration is incomplete\" in message\n        else 1\n    )\nraise SystemExit(1)"
+  ],
+  "environment": {
+    "AGENT_MODE": "llm",
+    "ALLOW_SCENARIO_ID": "true",
+    "APP_ENV": "local",
+    "DATABASE_URL": "sqlite:///C:/Users/PC/AppData/Local/Temp/f1-23-b-llm-missing-be7cauqj/qa.db",
+    "DEMO_MODE": "false",
+    "LLM_API_KEY": "",
+    "LLM_MODEL": "gemini-test",
+    "LLM_PROVIDER": "gemini",
+    "PAYPAL_MODE": "mock",
+    "PUBLIC_BASE_URL": "http://localhost:8000"
+  },
+  "expected_exit": 0,
+  "expected_fragments": [
+    "UpstreamError",
+    "LLM configuration is incomplete"
+  ],
+  "missing_fragments": [],
+  "passed": true,
+  "probe": "F1-20 startup fails closed when LLM_API_KEY is missing",
+  "stderr": "",
+  "stdout": "{\"type\": \"UpstreamError\", \"message\": \"LLM configuration is incomplete\"}\n"
+}

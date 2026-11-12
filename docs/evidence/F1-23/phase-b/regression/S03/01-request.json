@@ -1,0 +1,12 @@
+{
+  "body": {
+    "customer_message": "Can I get 40% off if I pay this week?",
+    "scenario_id": "S03_exceeds_discount"
+  },
+  "headers": {
+    "Idempotency-Key": "qa-f1-23-s03-33460039ea8c4890aa80b4bc4c4ef2b9"
+  },
+  "method": "POST",
+  "path": "/api/v1/invoices/INV-001/proposals",
+  "ts": "2026-11-11T01:00:04.031455+00:00"
+}

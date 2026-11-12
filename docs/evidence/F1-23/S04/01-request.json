@@ -1,0 +1,12 @@
+{
+  "body": {
+    "customer_message": "I am prepared to settle this account immediately today if you can authorize a 10% discount on the total balance.",
+    "scenario_id": "S04_reasonable_discount"
+  },
+  "headers": {
+    "Idempotency-Key": "qa-f1-23-s04-8d0740b81b2a4c1084de91c8882e51aa"
+  },
+  "method": "POST",
+  "path": "/api/v1/invoices/INV-001/proposals",
+  "ts": "2026-11-10T17:10:29.744684+00:00"
+}

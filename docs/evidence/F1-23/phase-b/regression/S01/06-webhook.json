@@ -1,0 +1,16 @@
+{
+  "body": {
+    "received": true
+  },
+  "request": {
+    "event_type": "INVOICING.INVOICE.PAID",
+    "id": "WH-83e99b889a154b5880c8f183a308f006",
+    "resource": {
+      "invoice": {
+        "id": "MOCK-INV-09B97B43"
+      }
+    }
+  },
+  "status_code": 200,
+  "ts": "2026-11-11T01:00:03.689841+00:00"
+}

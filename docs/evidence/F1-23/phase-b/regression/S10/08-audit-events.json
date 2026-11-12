@@ -1,0 +1,41 @@
+{
+  "body": {
+    "items": [
+      {
+        "action": "PROPOSAL_BLOCKED",
+        "actor": {
+          "id": "recovery_service",
+          "mode": null,
+          "type": "SYSTEM"
+        },
+        "event_id": "aud_000001",
+        "invoice_id": "INV-001",
+        "paypal_called": false,
+        "paypal_ref": null,
+        "proposal_id": "prop_1bd1eaa21a67",
+        "proposed_by": {
+          "id": "agent_v1",
+          "mode": "DEMO",
+          "type": "AGENT"
+        },
+        "rule": {
+          "attempted": null,
+          "code": "INVALID_AGENT_OUTPUT",
+          "limit": null,
+          "message": "The agent output failed contract validation",
+          "unit": null
+        },
+        "seq": 1,
+        "severity": "CRITICAL",
+        "source": null,
+        "state_from": "DRAFTED",
+        "state_to": "BLOCKED",
+        "summary": "The agent output failed contract validation; PayPal not called",
+        "ts": "2026-11-11T01:00:04Z"
+      }
+    ],
+    "next_seq": 1
+  },
+  "status_code": 200,
+  "ts": "2026-11-11T01:00:04.832529+00:00"
+}

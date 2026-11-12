@@ -1,0 +1,13 @@
+{
+  "body": {
+    "balance": "1500.00",
+    "currency": "USD",
+    "customer_name": "Fabrikam Demo Services",
+    "due_date": "2026-10-31",
+    "id": "INV-003",
+    "paypal_invoice_id": "MOCK-INV-1E931B59",
+    "status": "OVERDUE"
+  },
+  "status_code": 200,
+  "ts": "2026-11-11T01:00:03.456137+00:00"
+}

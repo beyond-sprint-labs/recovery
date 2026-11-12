@@ -1,0 +1,59 @@
+{
+  "body": {
+    "alternative": {
+      "amount_due_now": "300.00",
+      "installment_amount": "240.37",
+      "schedule": [
+        {
+          "amount": "300.00",
+          "due_date": "2026-11-10",
+          "interest": "0.00",
+          "n": 0,
+          "principal": "300.00"
+        },
+        {
+          "amount": "240.37",
+          "due_date": "2026-12-10",
+          "interest": "10.50",
+          "n": 1,
+          "principal": "229.87"
+        },
+        {
+          "amount": "240.37",
+          "due_date": "2027-01-10",
+          "interest": "7.05",
+          "n": 2,
+          "principal": "233.32"
+        },
+        {
+          "amount": "240.36",
+          "due_date": "2027-02-10",
+          "interest": "3.55",
+          "n": 3,
+          "principal": "236.81"
+        }
+      ],
+      "terms": {
+        "down_payment_pct": "30",
+        "installments": 3,
+        "periodic_rate_pct": "1.5"
+      },
+      "total_paid": "1021.10",
+      "type": "down_payment_installments"
+    },
+    "currency": "USD",
+    "customer_message": "Hello, your proposed installment arrangement for invoice INV-001 has been approved: pay $300.00 today, followed by 3 monthly payments of $240.37, for a total of $1021.10. Please review the schedule and confirm below.",
+    "expires_at": "2026-11-11T17:10:29Z",
+    "invoice_id": "INV-001",
+    "original_balance": "1000.00",
+    "proposal_id": "prop_b7f292f680b1",
+    "simulation_notice": "Simulation subject to merchant approval and customer acceptance. Not financial or legal advice. Only the down payment is invoiced in PayPal Sandbox; the remaining installments are simulated.",
+    "status": "PENDING_CUSTOMER"
+  },
+  "request": {
+    "method": "GET",
+    "path": "/api/v1/customer/proposals/<redacted>"
+  },
+  "status_code": 200,
+  "ts": "2026-11-10T17:10:29.555610+00:00"
+}

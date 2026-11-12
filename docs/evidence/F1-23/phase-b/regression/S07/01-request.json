@@ -1,0 +1,12 @@
+{
+  "body": {
+    "customer_message": "This invoice is ridiculous and your service was terrible. I am not paying a cent.",
+    "scenario_id": "S07_hostile_customer"
+  },
+  "headers": {
+    "Idempotency-Key": "qa-f1-23-s07-91cc854c2cf64d8bb034bb60b343b511"
+  },
+  "method": "POST",
+  "path": "/api/v1/invoices/INV-001/proposals",
+  "ts": "2026-11-11T01:00:04.512538+00:00"
+}

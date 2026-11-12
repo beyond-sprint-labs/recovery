@@ -1,0 +1,97 @@
+{
+  "body": {
+    "alternatives": [],
+    "approved_alternative": null,
+    "attempted": [],
+    "audit_event": {
+      "action": "PROPOSAL_BLOCKED",
+      "actor": {
+        "id": "text_guard",
+        "mode": null,
+        "type": "SYSTEM"
+      },
+      "event_id": "aud_000001",
+      "invoice_id": "INV-001",
+      "paypal_called": false,
+      "paypal_ref": null,
+      "proposal_id": "prop_c04ebb88f293",
+      "proposed_by": {
+        "id": "agent_v1",
+        "mode": "DEMO",
+        "type": "AGENT"
+      },
+      "rule": {
+        "attempted": "850.00",
+        "code": "TEXT_NUMBER_MISMATCH",
+        "limit": null,
+        "message": "Generated text contains figures the finance engine did not produce",
+        "unit": "figures"
+      },
+      "seq": 1,
+      "severity": "CRITICAL",
+      "source": null,
+      "state_from": "DRAFTED",
+      "state_to": "BLOCKED",
+      "summary": "AI-generated text contains figures not produced by the finance engine (850.00); PayPal not called",
+      "ts": "2026-11-11T01:00:04Z"
+    },
+    "blocked_reasons": [
+      {
+        "attempted": "850.00",
+        "code": "TEXT_NUMBER_MISMATCH",
+        "limit": null,
+        "message": "Generated text contains figures the finance engine did not produce",
+        "unit": "figures"
+      }
+    ],
+    "currency": "USD",
+    "customer_intent": {
+      "available_now": null,
+      "desired_date": null,
+      "preferred_installments": 3,
+      "requested_discount_pct": null
+    },
+    "customer_message_draft": null,
+    "engine_version": "1.0.0",
+    "explanation": null,
+    "invoice_id": "INV-001",
+    "paypal": null,
+    "paypal_called": false,
+    "policy_check": {
+      "status": "PASSED",
+      "violations": []
+    },
+    "proposal_id": "prop_c04ebb88f293",
+    "status": "BLOCKED",
+    "text_number_check": {
+      "numbers_in_text": [
+        "900.00",
+        "10",
+        "300.00",
+        "3",
+        "240.37",
+        "240.36",
+        "1021.10",
+        "850.00",
+        "900.00",
+        "10",
+        "300.00",
+        "3",
+        "240.37",
+        "240.36",
+        "1021.10"
+      ],
+      "status": "FAILED",
+      "unmatched": [
+        "850.00"
+      ]
+    }
+  },
+  "headers": {
+    "content-length": "1495",
+    "content-type": "application/json",
+    "vary": "Origin"
+  },
+  "status_code": 200,
+  "ts": "2026-11-11T01:00:04.899670+00:00"
+}

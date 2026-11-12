@@ -1,0 +1,12 @@
+{
+  "body": {
+    "customer_message": "I can make a partial payment now and potentially cover the rest later. What alternatives are available if I prefer not to pay the full amount immediately?",
+    "scenario_id": "S06_ambiguous_partial_later"
+  },
+  "headers": {
+    "Idempotency-Key": "qa-f1-23-s06-e2c0c08368d34e83addbe8c6599ff2e3"
+  },
+  "method": "POST",
+  "path": "/api/v1/invoices/INV-001/proposals",
+  "ts": "2026-11-11T01:00:04.419964+00:00"
+}

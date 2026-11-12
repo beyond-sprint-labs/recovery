@@ -1,0 +1,13 @@
+{
+  "body": {
+    "balance": "400.00",
+    "currency": "USD",
+    "customer_name": "Contoso Demo Studio",
+    "due_date": "2026-08-31",
+    "id": "INV-005",
+    "paypal_invoice_id": null,
+    "status": "CANCELLED"
+  },
+  "status_code": 200,
+  "ts": "2026-11-11T01:00:03.470864+00:00"
+}
